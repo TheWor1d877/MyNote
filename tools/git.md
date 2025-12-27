@@ -24,15 +24,17 @@ git config --global core.editor vim
 
 ## 二、日常开发 ①：本地工作区
    
-| 场景      | 命令                                         |
-| ------- | ------------------------------------------ |
-| 查看整体状态  | `git status -s`                            |
-| 快速 Diff | `git diff` / `git diff --staged`           |
-| 原子提交    | `git add -p` → review 每块改动                 |
-| 写消息     | `git ci -m "feat(auth): add SSO callback"` |
-| 改最后一次   | `git ci --amend` （**未 push 前**）            |
-| 丢弃工作区   | `git restore .`                            |
-| 撤回暂存区   | `git restore --staged <file>`              |
+| 场景       | 命令                                         |
+| -------- | ------------------------------------------ |
+| 查看整体状态   | `git status -s`                            |
+| 快速 Diff  | `git diff` / `git diff --staged`           |
+| 原子提交     | `git add -p` → review 每块改动                 |
+| 写消息      | `git ci -m "feat(auth): add SSO callback"` |
+| 改最后一次    | `git ci --amend` （**未 push 前**）            |
+| 丢弃工作区    | `git restore .`                            |
+| 撤回暂存区    | `git restore --staged <file>`              |
+| 查看HEAD文件 | `git show HEAD:<文件名称>`                     |
+| 查看暂存区文件  | `git show :<文件名称>`                         |
 
 
 ## 三、日常开发 ②：分支与合并（Merge Request 流程）
@@ -103,5 +105,8 @@ git config --global core.editor vim
    5. 合并即删分支，仓库常清  
    6. 公共历史一律用 **revert**，禁用 `reset --hard`
    
-status diff(staged) ls-files rebase stash switch add -p commit push pull merge fetch squash revert reset --hard --soft
-show restore
+工作区与暂存区 status restore diff stash 
+暂存区与本地仓库  diff(staged)
+分支switch merge fetch
+前后提交 rebase squash revert reset -hard --soft
+查看工作区：  ls-files
