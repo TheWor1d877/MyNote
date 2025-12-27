@@ -93,20 +93,9 @@ git config --global core.editor vim
    ```
    
    ---
-   
-## 九、一键自检脚本（可进 Makefile / npm script）
-   ```bash
-   #!/usr/bin/env bash
-   set -e
-   npm run lint
-   npm run test:unit
-   git diff --quiet --exit-code          # 确保无未暂存
-   git diff --cached --quiet --exit-code # 确保无已暂存未提交
-   echo "✅ Ready to push"
-   ```
-   
 
-## 十、企业工作流口诀（背下来）
+
+## 九、企业工作流口诀（背下来）
    1. **main** 保护，禁止直推  
    2. 需求必开 **feature** 分支，生命周期 ≤ 7 天  
    3. 提交前 `pull --rebase`，保持线性  
@@ -114,3 +103,5 @@ git config --global core.editor vim
    5. 合并即删分支，仓库常清  
    6. 公共历史一律用 **revert**，禁用 `reset --hard`
    
+status diff(staged) ls-files rebase stash switch add -p commit push pull merge fetch squash revert reset --hard --soft
+show restore
