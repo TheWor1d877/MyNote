@@ -65,6 +65,10 @@ func main() {
 	}
 }
 ```
+#### 何时使用？
+每个请求 CPU 密集（如加密/解压）
+需要严格限制并发处理数（而非连接数）
+所以适用情况较少，最佳实践还是goroutine per connection
 
 ## Pipeline
 将任务拆分为多个 stage
