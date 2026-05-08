@@ -26,9 +26,40 @@ grep $(whoami) /etc/subgid
 
 ## 验证容器进程的uid映射
 ```bash
+# 启动一个容器并进入 shell
+podman run -it --name test-rootless alpine sh
 
+# 在容器内查看 UID
+whoami    # 输出：root
+id        # 输出：uid=0(root) gid=0(root)
+
+# 退出容器
+exit
 ```
+
 ## 验证Docker的root环境
 Docker Daemon（守护进程）总是以root权限运行的，所有容器都是由这个root权限的 deamon创建 与管理
 普通用户执行docker run 也是root权限的操作
+1. 检查 Docker Daemon 进程
+```bash
+# 查看 dockerd 进程
+ps aux | grep dockerd
 
+# 或者查看完整进程树
+pstree -p | grep dockerd
+```
+2. 检查 Docker Socket 权限
+```bash
+ls -l /var/run/docker.sock
+```
+3. 验证容器进程的实际权限
+```bash
+# 启动一个容器
+docker run -d --name test-container nginx
+
+# 查看容器进程在宿主机上的实际 UID
+ps aux | grep nginx
+```
+
+由于dackerd的root权限，在许多方面需要更多的安全边界检查
+每次api调用都要验证用户是否有更多的权限
