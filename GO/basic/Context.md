@@ -136,3 +136,19 @@ if !ok {
 rpcCtx, _ := context.WithDeadline()
 ```
 go的http.NewRequestWithContext
+
+
+## 使用方法（以gRPC为例）
+```GO
+// 服务 A
+ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
+defer cancel()
+
+// 获取剩余时间
+if deadline, ok := ctx.Deadline(); ok {
+    timeout := time.Until(deadline)
+    // 将 timeout 传递给 gRPC 调用
+    client.Call(ctxWithTimeout(ctx, timeout))
+}
+```
+不要硬编码超时时间，而是从传入的Context中提取剩余时间

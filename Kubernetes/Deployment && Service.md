@@ -39,3 +39,38 @@ kubectl rollout undo deployment/nginx
 | 多个 Pod 负载均衡        | Service 自动分发请求  |
 | 外部无法访问内部 Pod       | Service 提供外部端口  |
 |                    |                 |
+默认情况下，Pod 只能通过 Kubernetes 集群中的内部 IP 地址访问。 要使得 hello-node 容器可以从 Kubernetes 虚拟网络的外部访问，你必须将 Pod 通过 Kubernetes Service 公开出来。
+
+使用kubectl expose 命令将pod暴露出去（集群外，公网等等）
+
+#### Service数据流
+启动nginx：
+```bash
+kubectl expose depolyment --type=NodePort --port=8080 --target-port=80
+```
+数据流：
+```txt
+你的电脑
+    │
+    │ 访问 http://192.168.49.2:30982
+    │         ↑               ↑
+    │      Minikube IP     NodePort
+    │
+    ▼
+Minikube 节点（192.168.49.2）
+    │ 节点上监听 30982 端口
+    │
+    ▼
+Service（10.101.228.231）
+    │ Service 监听 8080 端口
+    │
+    ▼
+Pod（10.244.0.x）
+    │ Pod 监听 80 端口（target-port）
+    │
+    ▼
+nginx服务
+```
+真正干活的nginx服务在80端口
+这个Service在8080端口（内部访问）
+浏览器需要访问30982端口
