@@ -17,7 +17,7 @@ kubectl create configmap nginx-config \
 ```
 
 - 创建一个deployment将configmap挂载为卷
-```bash
+```yaml
 cat <<EOF | kubectl apply -f -
 apiVersion: apps/v1
 kind: Deployment
