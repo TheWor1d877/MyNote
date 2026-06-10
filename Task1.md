@@ -1,12 +1,4 @@
 ## 二
-第4章：云原生开发与部署
-目标：将服务容器化并部署到 K8s  
-产出：Docker 镜像 + Helm Chart + ConfigMap
-小节   内容
-4.1   多阶段 Dockerfile 编写（减小镜像体积）
-
-4.2   GoLand Docker 插件构建与调试
-
 4.3   K8s Deployment 编写（探针、资源限制）
 
 4.4   Helm Chart 封装（values.yaml 参数化）
@@ -20,17 +12,11 @@
 
 
 
-第9章：自动化运维与 CI/CD
-目标：实现开发到部署自动化  
-产出：GitHub Actions 流水线
-小节   内容
 9.1   Makefile 统一构建命令
 
 9.2   单元测试 + 覆盖率报告
 
 9.3   GitHub Actions CI（测试、构建、推送镜像）
-
-9.4   ArgoCD/GitOps 自动部署到 K8s
 
 9.5   日志收集（Loki + Promtail）
 
