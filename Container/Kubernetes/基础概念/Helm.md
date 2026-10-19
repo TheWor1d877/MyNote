@@ -150,3 +150,25 @@ helm install my-redis-local . \
 关键点
 此模式下，你拥有了 Chart 的完整源码，可以做任意修改。
 缺点：你脱离了上游 Chart 的更新轨道。未来 Bitnami 发布安全修复，你需要手动同步代码。
+
+## Helm对于CRD的处理方式
+
+| 特性   | 普通资源（Deployment 等） | CRD               |
+| :--- | :----------------- | :---------------- |
+| 升级时  | 会被更新/替换            | 默认不更新（防止数据丢失）     |
+| 卸载时  | 会被删除               | 默认不删除（防止数据丢失）     |
+| 安装顺序 | Helm 自动排序          | 必须先于使用该 CRD 的资源创建 |
+
+将CRD的yaml文件放到crds/文件夹下面
+```text
+my-chart/
+├── Chart.yaml
+├── values.yaml
+├── crds/
+│   └── my-crd.yaml
+└── templates/
+   └── ...
+```
+Helm会在安装Release之前创建所有CRD
+
+crds目录下面是纯yaml，不会被模板语法渲染

@@ -1,15 +1,20 @@
+CSI是一套标准的 gRPC 接口，让驱动变成一个容器化的独立进程，将存储驱动从 K8s 核心中剥离出来。存储厂商只需实现这套接口，就能让自己的存储系统接入任何支持 CSI 的编排系统 （如 K8s, Mesos）
+kubelet 和 external-provisioner、external-attacher 这些 sidecar 容器去跟驱动通信。驱动本身完全不知道 K8s 的存在
+
 在 CSI 出现之前，Kubernetes 的存储驱动（如 AWS EBS, GCE PD）是 “in-tree” 的，即代码直接写在 Kubernetes 核心仓库里
-CSI 通过定义一套标准的 gRPC 接口，将存储驱动从 K8s 核心中剥离出来。存储厂商只需实现这套接口，就能让自己的存储系统接入任何支持 CSI 的 CO（如 K8s, Mesos）。
+
 
 ## CSI的核心组件
 - Controller plugin
 运行在控制平面，它通常以 Deployment 的形式运行，不绑定到特定节点。
+负责 CreateVolume、DeleteVolume、ControllerPublish 这类集群级操作，它通过 K8s API 和外部 sidecar 协作。
 
-核心职责：处理 与节点无关的、集群范围的卷生命周期管理操作。
+StorageClass 里指定 provisioner 为某个 CSI 驱动的名字，PVC 触发动态供给时，external-provisioner 就会去调这个驱动的 CreateVolume。
+
 
 - Node Plugin
 运行在 每个工作节点（Worker Node） 上。在 Kubernetes 中，它通常以 DaemonSet 的形式部署，确保每个节点都有一个实例。
-核心职责：处理 与节点本地文件系统和设备相关的操作。
+核心职责：将块挂载到宿主上面，再通过bind mount进容器
 
 
 ## 工作流程

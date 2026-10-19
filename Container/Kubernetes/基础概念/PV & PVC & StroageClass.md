@@ -1,27 +1,19 @@
 ## Introduction
-StorageClass 是“模板”，PVC 是“申请单”，PV 是“实际资源”
+PVC是用户的存储申请，需要什么样子的存储
+PV是集群级别的存储资源对象，描述存储的大小、访问模式、回收策略等
+StorageClass负责动态生成PV，StorageClass 描述"用哪个 provisioner、什么参数、什么回收策略去创建存储"，PVC 里指定 storageClassName，供给器就会按需动态创建 PV 再绑定。
 
-StorageClass 定义了如何动态创建PV
-PVC是用户的存储申请
-PV是实际的存储资源
+K8s 的绑定控制器负责把 PVC 匹配到一个满足条件的 PV 上，绑定是一对一的，绑完这块 PV 就被这个 PVC 独占。
+Pod中不需要引用PV，而是引用PVC，这样就实现了声明式解耦——用户只声明需求，系统负责满足。
 
-- 整体工作流程
-用户创建PVC，检查PVC是否指定了StroageClass
-如果没有，就用静态的PV资源
-如果有，k8s调用StroageClass的Provisioner,自动创建PV
+用户创建PVC，检查PVC是否指定了StroageClass，如果没有，就用静态的PV资源，否则k8s调用StroageClass的Provisioner,自动创建PV
 
-## 核心设计思想
-集群管理员提供存储能力 => 我有哪些后端存储？如何创建卷 PV / StorageClass
 
-应用开发者声明pod使用存储的需求 => 我需要多大、什么类型的存储? → PVC
-
-## PV 作用
-持久化存储数据，在单节点上面类似于docker中的Volumn
-主要用于写入 + 持久保存数据，重启Pod之后数据还在
+## PV 与ConfigMap的区别
+PV持久化存储数据，在单节点上面类似于docker中的Volumn，主要用于写入 + 持久保存数据，重启Pod之后数据还在
 
 ConfigMap 用于 只读注入（内容由用户预先定义，运行时通常不修改）
 
-#### 与ConfigMap的区别
 | 资源        | 底层存储                                                             | 是否可写                              | 生命周期                |
 | --------- | ---------------------------------------------------------------- | --------------------------------- | ------------------- |
 | PV        | 可以是：<br>• 本地磁盘（hostPath）<br>• 网络存储（NFS, Ceph）<br>• 云盘（EBS, Disk） | 可读写                               | 独立于 Pod，可长期存在       |
@@ -139,10 +131,10 @@ nfs.csi.k8s.io → NFS
 ## 多节点数据存储的核心原理
 PV 必须基于“网络存储”或“分布式存储”，而非本地磁盘
 
-| 存储类型 | 是否支持多节点 | 典型实现 | 适用场景 |
-|--------|--------------|--------|--------|
-| 本地存储 | ❌ | `hostPath`, `local` PV | 单节点开发、性能极致优化（如 Local PV + Pod 亲和性） |
-| 网络块存储 | ✅（但通常 RWO） | AWS EBS, 阿里云云盘, Ceph RBD | 数据库（MySQL, PostgreSQL） |
-| 网络文件存储 | ✅（支持 RWX） | NFS, CephFS, GlusterFS | Web 服务器共享静态文件、Jenkins workspace |
-| 对象存储 | ✅（但非 POSIX） | S3, OSS | 日志归档、大文件存储（需应用改造） |
+| 存储类型   | 是否支持多节点     | 典型实现                     | 适用场景                               |
+| ------ | ----------- | ------------------------ | ---------------------------------- |
+| 本地存储   | 否           | `hostPath`, `local` PV   | 单节点开发、性能极致优化（如 Local PV + Pod 亲和性） |
+| 网络块存储  | 是（但通常 RWO）  | AWS EBS, 阿里云云盘, Ceph RBD | 数据库（MySQL, PostgreSQL）             |
+| 网络文件存储 | 是（支持 RWX）   | NFS, CephFS, GlusterFS   | Web 服务器共享静态文件、Jenkins workspace    |
+| 对象存储   | 是（但非 POSIX） | S3, OSS                  | 日志归档、大文件存储（需应用改造）                  |
 

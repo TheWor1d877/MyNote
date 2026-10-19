@@ -32,7 +32,7 @@ HTTP 微服务（Nginx、Spring Boot）
 可水平扩展的中间件（Redis Cluster 的 proxy 层）
 
 #### 关键机制
-replicaSet + revision History
+###### replicaSet + revision History
 
 - Deployment 不直接管理 Pod，而是创建 ReplicaSet（RS）
 - 每次更新（如改镜像）会生成新 RS，旧 RS 保留（用于回滚）
@@ -41,6 +41,10 @@ replicaSet + revision History
 caSet 是确保指定数量的 Pod 副本始终运行的控制器。它的职责很单一：
 
 数量控制：如果 Pod 挂了，它启动新的；如果太多了，它终止多
+
+###### 滚动更新
+没有数量限制，一次可以更新多个副本
+
 #### 命令示例
 ```bash
 # 创建一个 Deployment（开店计划）
@@ -101,7 +105,7 @@ StatefulSet 是专门用来运行“有状态应用”的控制器，比如数�
 | 更新策略 | RollingUpdate（有序）、OnDelete（手动删 Pod 才更新） |
 
 #### 实现细节
-- Headless Service
+###### Headless Service
 Headless Service 是一种特殊的 Kubernetes Service，它的核心特点是 不分配 Cluster IP，也不通过 kube-proxy 做负载均衡，而是直接返回后端 Pod 的 IP 列表（通常是 DNS 域名解析直接解析到 Pod IP）。
 
 定义一个headless Service
@@ -119,7 +123,7 @@ spec:
 ```
 举例说明：
 ```bash
-￼￼# 解析 Service 名称
+￼￼# 解析 Service 名
   dig mysql-headless.default.svc.cluster.local
   # 返回：多个 A 记录 → 直接是 Pod 的真实 IP
   10.1.1.1
@@ -129,6 +133,8 @@ spec:
 
 - volumeClaimTemplates
 自动生成 PVC，命名规则：`<claimName>-<statefulSetName>-<ordinal>`
+###### 滚动更新逻辑
+从最大序号往最小序号倒着更新，一次只动一个，前一个 Ready 了才动下一个
 
 #### 使用场景
 分布式数据库：MySQL MGR、PostgreSQL Patroni、MongoDB Replica Set

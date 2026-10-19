@@ -1,4 +1,16 @@
-context 是 Go 云原生、微服务、HTTP/gRPC 开发中必备的核心包，用于在 goroutine 树中传递取消信号、超时、截止时间、请求元数据（如 traceID）。
+#面试-Go语言-复习  什么是 context？context 的取消传播在推理网关中如何工作？
+
+context 是 Go 里用来做"跨 goroutine 传递取消信号和截止时间"的机制，它的取消是靠一棵树形传播——父节点取消，所有子节点跟着取消。
+
+主要创建三类
+- WithCancel → 手动取消
+- WithTimeout / WithDeadline → 到点自动取消
+- WithValue → 挂一些请求级的元数据，比如 trace id、用户 id
+
+注意 ：
+context设计成一个接口，而不是一个具体的struct。目的是支持多种消息来源，不依赖具体的类型，这是Go的接口抽象
+
+context.Value不适合传递业务数据，因为Value没有类型安全容易语义不清让依赖隐式化，一版只传递元数据而不是参数
 
 ## Context 的四大核心能力
 
@@ -138,6 +150,13 @@ rpcCtx, _ := context.WithDeadline()
 go的http.NewRequestWithContext
 
 
+
+## context 的取消传播在推理网关中如何工作？
+每个 context 内部维护一个 children 集合（记录所有派生子节点）。当你 cancel() 一个父 context 时，它会遍历所有子节点，逐个调用它们的 cancel,子节点再往下传播，整棵树从根到叶子全部取消
+
+客户端断开。用户把连接断了，网关的 http.Request.Context() 会触发取消，子 context 全跟着 cancel,下游正在跑的推理请求能被及时叫停，省掉本来要浪费的 GPU 算力
+
+超时兜底。网关给每个请求设一个 WithTimeout,比如 200ms 还没返回就整体取消，防止慢请求把连接池占满。
 ## 使用方法（以gRPC为例）
 ```GO
 // 服务 A

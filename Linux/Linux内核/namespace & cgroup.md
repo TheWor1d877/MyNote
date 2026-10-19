@@ -1,12 +1,12 @@
 在 Linux 系统中，Namespace 和 Cgroup 是实现容器化（如 Docker、Podman）的两大核心底层技术。它们解决的是不同维度的资源隔离问题。
-
+#面试-云原生-复习 从容器本质出发，解释 namespace 与 cgroup 分别解决了隔离和资源限制中的什么问题。
 ## Namespace
 为进程提供系统资源的隔离视图，让进程认为自己独享操作系统，看不到其他Namespace里面的进程与资源
+每个进程都必然属于某个 namespace”，内核为每个 namespace 类型都维护了一个初始的、默认的 namespace（称为 "root namespace" 或 "initial namespace"）。
 
-Namespace 不是“给子进程用的特殊功能”，而是“每个进程都必然属于某个 namespace”。
-内核为每个 namespace 类型都维护了一个初始的、默认的 namespace（称为 "root namespace" 或 "initial namespace"）。
 
 **作用**：为进程提供**系统资源的隔离视图**。它让进程觉得自己是独享操作系统的，看不到其他 Namespace 里的进程和资源。
+但是namespace只是提供了视图上的隔离，不是资源隔离
 
 Linux 目前提供了 8 种主要的 Namespace：
 
@@ -21,6 +21,8 @@ Linux 目前提供了 8 种主要的 Namespace：
 | **Cgroup**        | Cgroup 控制组的视图      | 让进程只能看到自己的 Cgroup 路径（较新内核支持）        |
 | **Time**          | 系统时间               | 不同容器可看到不同的系统时间（较新内核支持）              |
 关键原理：对一个进程（如 clone() 创建的子进程）设置某个 Namespace 的 flag（如 CLONE_NEWPID），该进程及其子进程将会看到被隔离后的新资源视图。
+
+容器之间网络怎么通、Service 怎么做负载，底下全靠 Network namespace 加 veth pair 撑着
 
 #### 检查内核编译配置
 ```bash
@@ -40,19 +42,21 @@ sudo unshare --pid --fork --mount --net --uts --ipc bash
 ## Cgroup(Control Group 控制组)
 限制记录隔离进程组中使用的系统资源
 
-如果没有 Cgroup，一个容器里的恶意或出错的进程可能会耗尽宿主机的所有内存或 CPU，导致整个系统崩溃。Cgroup 正是为了防止这种情况
+Cgroup版本
+- v1：每种资源控制器独立挂载（如 cpu、memory、blkio）。这种梗模式下面所有的控制器都有自己的层级树，这就使得在容器编排环境下无法使用一个统一的视图去管理容器怎么被限制了
+- v2：统一层级结构，所有控制器挂载在同一棵树上，还增加了PSI（任务被阻塞多久），避免了混乱
 
 主要功能：
 - 资源控制：设置硬上限
-- 优先级控制： 分配资源权重，比如AB容器的CPU时间权重
 - 统计记录：监控资源使用情况
-- 进程控制： 暂停，恢复，杀死一组进程
 
-Cgroup版本
-- v1：每种资源控制器独立挂载（如 cpu、memory、blkio）。ip
-- v2：统一层级结构，所有控制器挂载在同一棵树上，功能更一致且安全。
+注意： 内存是硬性的，内存超过某个上限之后杀死进程，而CPU是软性的，CPU超了只会等待下个时间片继续运行
 
-每个进程都“属于”某个 Cgroup，但这不代表每个进程都“受限于”资源配额。
+cgroup对应的就是k8s Pod中的limit
+然后QoS分级本质上还是cgroup怎么配置
+
+
+每个进程都“属于”某个 Cgroup，但这不代表每个进程都“受限于”资源配。
 ```bash
 root@ASUS-HE:/sys/fs/cgroup# cat /proc/$$/cgroup
 0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.gnome.Terminal.slice/vte-spawn-a5d09db5-b9ae-41c9-9c35-7f48c75624d4.scope

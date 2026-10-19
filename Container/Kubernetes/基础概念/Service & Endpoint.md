@@ -1,19 +1,10 @@
+#面试-云原生-复习 解释 Service、Endpoints、EndpointSlice 的关系，以及大规模推理服务下 EndpointSlice 为什么重要
+
 ## Service
+默认情况下，Pod 只能通过 Kubernetes 集群中的内部 IP 地址访问。 要使得容器可以从 Kubernetes 虚拟网络的外部访问，你必须将 Pod 通过Service 公开出来。
 
-| 问题                 | Service 的解决方案   |
-| ------------------ | --------------- |
-| Pod 的 IP 不稳定（重启就变） | Service 提供固定 IP |
-| 多个 Pod 负载均衡        | Service 自动分发请求  |
-| 外部无法访问内部 Pod       | Service 提供外部端口  |
-|                    |                 |
-
-默认情况下，Pod 只能通过 Kubernetes 集群中的内部 IP 地址访问。 要使得 hello-node 容器可以从 Kubernetes 虚拟网络的外部访问，你必须将 Pod 通过 Kubernetes Service 公开出来。
-   
-Service定义了Pod的访问策略，通过Selector关联Pod
-
-Service的本质： 提供一个稳定的的虚拟IP或者DNS名称，背后代理一组动态变化的Pod
-ServiceIP是虚拟ip，需要配合使用转发组件
-
+Service分到一个虚拟IP或者DNS地址，客户端访问这个IP,k8s保证将请求转发到任意一个Pod上面，这样就实现了负载均衡
+这里的关键是解耦，客户端不需要知道有多少Pod，也不需要知道Pod的具体IP
 #### Service工作原理
 Service本身不处理流量，依赖组件进行转发
 - kube-proxy
@@ -61,14 +52,14 @@ spec:
 NodePort不会自动高可用，需要手动配置负载均衡
 
 ## Endpoint
-Endpoint由Service自动生成
-- Endpoint = Service 后端真实 Pod 的 IP:Port 列表
-- 它是 Kubernetes 控制平面动态维护的映射关系
-Service 是虚拟 IP（ClusterIP），Endpoint 是这个虚拟 IP 背后真实的 Pod 地址列表
+Endpoint是Service背后的地址映射关系的列表
+kube-controller-manager 里有一个 endpoints controller，它使用watch持续观察Pod或者Service，一旦发生变化就更新对应的EndPoint对象
 
-用户可以手动创建Endpoint对象来绑定IP
+EndPoint本质上就是一堆IP:Port的映射关系，以及相关Pod是否准备好
 
-有了Endpoint 就将Servicee与Pod的声明周期解耦了‘
+用户可以手动创建Endpoint对象来绑定IP，一般不推荐
+
+有了Endpoint 就将Servicee与Pod的声明周期解耦了:
 Pod 随时扩缩容，崩溃重建（IP发生变化）
 Service 必须保持稳定（ClusterIP 不变）
 
@@ -95,9 +86,12 @@ targetRef:
   uid: c2b0e63f-0068-41f0-a778-b1240566ce95]
 ```
 ## EndpointSlice
-如果Pod数量非常大，单个Endpoint对象变得十分巨大
-每个Pod的变化都要更新整个Endpoint对象
-这让etcd压力变大
+1. 如果Pod数量非常大，单个Endpoint对象变得十分巨大
+2. 每个Pod的变化都要更新整个Endpoint对象，这让etcd压力变大
+3. 更新是原子的，Endpoint是整体替换，但是往往需要修改的内容很少，只需修改一片即可
+4. 推理场景下副本多，负载波动经常，扩缩容频繁，滚动更新也是很频繁的
+   这些操作都会大致后端Pod地址发生变化，所以对Endpoint的管理更加重要了
+
 
 解决方案： 分片处理
 ```yaml
@@ -115,7 +109,6 @@ endpoints:
 ports:
 - port: 8080
 ```
-
 更新粒度小（只改一个 slice）
 支持拓扑感知路由（如 topology.kubernetes.io/zone）
 ## kube-proxy

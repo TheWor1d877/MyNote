@@ -1,12 +1,17 @@
 ## Device Plugin
-K8s原生只认识CPU和内存。GPU是"异构设备"，K8s调度器不知道节点上有几块GPU、型号是什么、拓扑关系如何。Device Plugin就是GPU与K8s之间的翻译官。
+#面试-云原生-复习  什么是 Device Plugin？GPU 厂商如何通过它把 GPU 资源暴露给 Kubernetes
+
+K8s原生只认识CPU和内存。GPU是"异构设备"，K8s调度器不知道节点上有几块GPU、型号是什么、拓扑关系如何。Device Plugin就是将GPU暴露成可调度资源的机制
+
 #### 核心工作流程
 1. 注册
 Device Plugin启动，通过gRPC向kubelet注册，声明自己管理nvidia.com/gpu资源
 2. 上报
-Device Plugin调用nvidia-smi扫描设备，向kubelet上报GPU列表，kubelet将GPU作为Extended Resource写入Node Status
+Device Plugin调用nvidia-smi扫描设备，向kubelet上报GPU列表，kubelet将GPU作为拓展资源写入Node Status
+
 3. 调度
-用户Pod声明 resources.limits.nvidia.com/gpu: 1，调度器根据Node Status中的GPU数量做匹配，选定节点
+用户Pod声明` resources.limits.nvidia.com/gpu: 1`，调度器根据Node Status中的GPU数量做匹配，选定节点
+
 4. 分配
 kubelet调用Device Plugin的Allocate()接口，返回具体GPU设备ID（如GPU-0），nvidia-container-toolkit在容器启动时注入驱动、挂载设备节点
 #### 关键点
@@ -48,21 +53,27 @@ env:
 securityContext:
   privileged: true
 ```
+
 ## MIG
-MIG（Multi-Instance GPU）是NVIDIA Ampere架构（A100）及以上支持的硬件级分区技术。它不是软件虚拟化，而是在芯片层面把一块物理GPU切成多个完全隔离的实例。
+#面试-云原生-复习 什么是 MIG？它和整卡分配、时间片共享相比，在推理服务隔离性上有什么取舍？
+
+MIG（Multi-Instance GPU）是NVIDIA Ampere架构（A100）及以上支持的硬件级分区技术。而是在芯片层面把一块物理GPU切成多个完全隔离的实例。
 
 每个MIG实例拥有：
 - 独立的SM（流多处理器）——计算核心物理隔离
+- 独立的L1/L2 Cache和内存总线——I/O通道隔离
 - 独立的显存——显存带宽和容量硬隔离
-- 独立的L2 Cache和内存总线——I/O通道隔离
 
 MIG缺点：
-MIG 的隔离是深入到芯片内部数据通路的。如果允许 MIG 实例之间进行 P2P 直连，就需要在隔离的硬件单元之间重新建立高带宽的通信路径，这可能会削弱甚至破坏隔离的完整性。因此，在 MIG 模式下，NVLink 和 NVSwitch 都被禁用，实例间的通信只能通过系统内存（CPU 内存）进行，效率自然更低。
+MIG 的隔离是深入到芯片内部数据通路的。在 MIG 模式下，NVLink 和 NVSwitch 都被禁用，实例间的通信只能通过系统内存（CPU 内存）进行.
+MIG 的切分配置是预先定义的，改配置通常需要清空 GPU 上的所有负载。整卡分配没有这个问题，想给谁就给谁。
 
 适用条件：
-多租户共享
-混合负载运行
-小任务上面使用GPU
+- 多租户共享
+- 混合负载运行
+- 小任务上面使用GPU
+
+MIG 的隔离性是硬件给的，时间片的“隔离性”是调度器口头承诺的，整卡分配则根本不需要讨论隔离。
 
 ## 软件级共享：Time-Slicing 与 MPS
 如果硬件不支持MIG，或者采用更加灵活的共享粒度，可以采用软件方案

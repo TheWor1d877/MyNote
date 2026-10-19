@@ -22,6 +22,9 @@ spec:
       restartPolicy: Never  # Job 必须是 Never 或 OnFailure
   backoffLimit: 4  # 最多重试 4 次
 ```
+其他字段：
+completions： 总共要完成多少个Pod的任务
+parallelism：同时可以跑多少个Pod
 
 ## CronJob 
 基于Cron的表达式，周期性创建Job
