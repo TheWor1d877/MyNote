@@ -25,6 +25,8 @@ CDI是容器设备接口，在DRA模式下面GPU走的是CDI路径，而不是De
 
 可观测性上面，DRA 把设备状态纳入了 Kubernetes API，可以让驱动上报每台已分配设备的状态数据，比如网卡的 IP、MAC，或者设备的自定义健康条件
 
+补充: DRA 里会“崩”的不是 CRD 对象本身，而是 DRA 驱动（Driver）的 kubelet plugin 进程。 这个进程通常以 DaemonSet 形式跑在每个节点上，它挂了 K8s 会按 DaemonSet 的逻辑把它拉起来
+
 #### DRA的核心对象
 - DeviceClass （集群级别）
 集群级别对象，定义设备类别与筛选条件

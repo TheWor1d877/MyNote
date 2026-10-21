@@ -1,9 +1,28 @@
+#面试-分布式系统-复习 什么是 Raft？描述 Leader 选举、日志复制、安全性约束的核心流程。
+#面试-分布式系统-复习 Raft 中 term 的作用是什么？为什么旧 term 的日志不能随意提交？
 ## Raft中的角色
 在任何时刻，集群中的每个节点（Node）只能处于以下三种状态之一：
 - Leader（领导者）： 只有 Leader 能接收写入请求。其他节点收到写入请求会转发给 Leader。
 - Follower（跟随者）： 沉默的备份者。所有读写请求要么转发，要么回复“我不知道，去找 Leader”。
 - Candidate（候选者）： 临时工。只在选举期间存在，选完要么变 Leader，要么变 Follower。
+## Term
+Term（任期）是全局唯一的逻辑时钟，不是每台机器单独拥有的。
+同一时刻有且只有一个有效的Term编号
 
+Term 统一全局的方式：
+1. 选举时：
+Candidate 发起投票请求，必须在RPC里带上自己的 currentTerm（比如 Term=5）。
+
+Follower 收到后，会比较：
+如果 请求中的 Term > 本地的 currentTerm：说明自己落后了，立即更新本地 Term=5，并给 Candidate 投票。
+如果 请求中的 Term < 本地的 currentTerm：说明 Candidate 已经过时了，拒绝投票。
+
+2. 心跳/日志复制时：
+Leader 在每次 AppendEntries RPC 中，都会带上自己的 Term（比如 Term=4）。
+
+Follower 收到后，同样比较：
+如果 请求中的 Term > 本地 Term：说明自己错过了选举，立即更新本地 Term=4，并降级为 Follower。
+如果 请求中的 Term < 本地 Term：说明 Leader 已经过时了，拒绝该RPC，并回复“我的 Term 更大，你应该降级”。
 ## Leader选主
 集群刚开始时，所有节点都是 Follower。它们会互相发送心跳（Heartbeat）来确认对方活着。
 
@@ -24,42 +43,50 @@ Node2 收到 3 票（自己+Node1+Node3），超过半数（3/2+1=2），获胜�
 
 随机超时：选举计时器是随机的，大大减少了多个节点同时发起选举导致选票分裂的概率。
 
-## 日志复制
+选举限制：Follower 只给“日志至少和自己一样新”的 Candidate 投票。这保证新 Leader 一定包含所有已提交的日志
+## 日志复制(日志落盘 + 网络复制)
 客户端发起请求：客户端把写请求 {"op": "SET", "key": "x", "value": "1"} 发送给 Leader（Node2）。
 
-Leader 写入日志（Append）：
-Node2 收到请求，将其包装成一条日志条目（Log Entry），格式为 [索引=1, 任期=1, 命令=SET x=1]。
+Leader 日志落盘（Commit）：
+Node2 收到请求，将其包装成一条日志条目（Log Entry），格式为 `[索引=1, 任期=1, 命令=SET x=1]`
 将这条日志写入自己的磁盘（WAL 文件）。
 
-并行复制：Node2 在下一次心跳或立即，将这条日志条目并行发送给 Node1 和 Node3（AppendEntries RPC）。
+网络复制：Node2立即将这条日志条目并行发送给 Node1 和 Node3（AppendEntries RPC）。
 
-Follower 确认（Ack）：
+Follower 确认（Ack & Commit）：
 Node1 收到后，将日志写入自己的磁盘，返回 成功。
 Node3 同样操作，返回 成功。
 
-Leader 提交（Commit）：
+Leader 提交（Apply）：
 Node2 收到了 超过半数（2 个） 的确认回复（自己+Node1 或 Node3）。
-Node2 将这条日志标记为 “已提交（Committed）”，并在内存中真正执行这条命令（比如把内存中的 Key-Value 从 0 改成 1）。
+Node2 将这条日志标记为 “已提交（Committed）”，并在本地状态机中apply这条命令
 然后 Node2 回复客户端：“写入成功”。
 
 Follower 应用（Apply）：
-Node2 在后续的心跳消息中，会带上“我已经提交到索引 1”。
+Node2 在后续的心跳消息中，会带上“我已经提交索引 1”。
 Node1 和 Node3 收到后，发现自己的本地日志索引 1 还没执行，于是执行这条命令，把 Key-Value 改成 1。
-
+需要等待消息的原因： 防止Node2在还没收到多数派同意的时候就崩溃
 
 key：
 半数确认：只要多数派节点写入了日志，数据就算持久化了，不要求所有节点都成功。
 顺序一致：所有节点上的日志条目顺序都是按照 Leader 分配的索引来的，保证了全局顺序。
 
+## 日志压缩
+日志无限增长会吃满磁盘，重启时 replay 时间也扛不住。Snapshot 的思路是：把状态机当前状态拍成快照，然后丢掉快照点之前的日志
+
+压缩时间： 手动进行或者设置日志最大数量自动触发
+拍完日志后删除到哪里：默认删到 min(snapshotIndex, safeIndex)，其中 safeIndex 是所有成员中最小的 commitIndex。
+
+或者保留最近的N条快照，让让小幅落后的 follower 还能走增量复制，而不是直接传快照，落后太多的 Follower就直接让Leader传入整个快照
+
 ## Raft应对故障
 #### Leader宕机
 心跳超时：Node1、Node2、Node4、Node5 在 150ms~300ms 内没收到 Node3 的心跳。
-
 发起选举：Node1（计时器先归零）变成 Candidate，任期 +1（变为 4），请求其他节点投票。
-
 获得多数票：Node1 收到 Node2、Node4 的投票（共 3 票），成为新 Leader（任期 4）。
+继续服务：Node1 作为新 Leader 上台，新Leader先做日志对齐工作，Leader先用自己的日志去覆盖其他Node上面日志的分叉部分，保证所有活着的Node都与Leader同步
 
-继续服务：Node1 作为新 Leader 接受客户端写入。此时 Node3 如果恢复，发现自己的任期（3）小于当前任期（4），会自动降级为 Follower，并接受新 Leader 的日志覆盖
+此时 Node3 如果恢复，发现自己的任期（3）小于当前任期（4），会自动降级为 Follower，并主动向Leader发送日志更新请求，接受新 Leader 的日志覆盖
 
 Term小于currentTerm的node不会被投票
 
@@ -76,22 +103,16 @@ Node1、Node2 超时后选举 Node1 为新 Leader（任期 4）。
 Node3 虽然还在运行，但收不到多数派的确认，无法提交任何新日志。
 网络恢复后：Node3 收到来自 Node1 的更高任期（4）的心跳，自动降级为 Follower，并同步 Node1 的日志。
 
+## 成员变更
+当集群扩容，锁容，换机器的时候，一次只能换一个节点，防止新旧配置之间出现多个Leader
 
-## Term
-Term（任期）是全局唯一的逻辑时钟，不是每台机器单独拥有的。
-同一时刻有且只有一个有效的Term编号
+假设集群从 {A, B, C} 直接改成 {A, B, C, D, E}（一次加两个）。
+Leader A 把新配置条目写入本地日志，但还没复制到多数派；
+A 恰好崩溃/网络分区；
+此时一部分节点（比如 C）已经收到了新配置条目，另一部分（比如 B）还没有。
 
-Term 统一全局的方式：
-1. 选举时：
-Candidate 发起投票请求，必须在RPC里带上自己的 currentTerm（比如 Term=5）。
+此时集群中有两种配置视角：
+旧配置视角：{A, B, C}，Quorum = 2。B 和 C 可以组成多数派。
+新配置视角：{A, B, C, D, E}，Quorum = 3。C、D、E 可以组成多数派。
+在两个多数派中都会进行Leader选举，可能造成多Leader
 
-Follower 收到后，会比较：
-如果 请求中的 Term > 本地的 currentTerm：说明自己落后了，立即更新本地 Term=5，并给 Candidate 投票。
-如果 请求中的 Term < 本地的 currentTerm：说明 Candidate 已经过时了，拒绝投票。
-
-2. 心跳/日志复制时：
-Leader 在每次 AppendEntries RPC 中，都会带上自己的 Term（比如 Term=4）。
-
-Follower 收到后，同样比较：
-如果 请求中的 Term > 本地 Term：说明自己错过了选举，立即更新本地 Term=4，并降级为 Follower。
-如果 请求中的 Term < 本地 Term：说明 Leader 已经过时了，拒绝该RPC，并回复“我的 Term 更大，你应该降级”。
