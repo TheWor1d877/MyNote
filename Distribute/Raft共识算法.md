@@ -14,15 +14,15 @@ Term 统一全局的方式：
 Candidate 发起投票请求，必须在RPC里带上自己的 currentTerm（比如 Term=5）。
 
 Follower 收到后，会比较：
-如果 请求中的 Term > 本地的 currentTerm：说明自己落后了，立即更新本地 Term=5，并给 Candidate 投票。
+如果 请求中的 Term > 本地的 currentTerm：说明自己落后了，<span style="color:rgb(221, 85, 85)">立即更新本地 Term=5</span>，并给 Candidate 投票。
 如果 请求中的 Term < 本地的 currentTerm：说明 Candidate 已经过时了，拒绝投票。
 
 2. 心跳/日志复制时：
 Leader 在每次 AppendEntries RPC 中，都会带上自己的 Term（比如 Term=4）。
-
-Follower 收到后，同样比较：
-如果 请求中的 Term > 本地 Term：说明自己错过了选举，立即更新本地 Term=4，并降级为 Follower。
-如果 请求中的 Term < 本地 Term：说明 Leader 已经过时了，拒绝该RPC，并回复“我的 Term 更大，你应该降级”。
+如果这个Leader过时了，它还不知道，站在他的视角上：
+Follower 收到后，比较：
+如果 leader请求中的 Term > 本地 Term：说明自己错过了选举，立即更新本地 Term=4，并降级为 Follower。
+如果leader请求中的Term < 本地 Term：说明 Leader 已经过时了，拒绝该RPC，并回复“我的 Term 更大，你应该降级”。Leader主动降级之后等待新Leader主动联系它
 ## Leader选主
 集群刚开始时，所有节点都是 Follower。它们会互相发送心跳（Heartbeat）来确认对方活着。
 
@@ -44,7 +44,18 @@ Node2 收到 3 票（自己+Node1+Node3），超过半数（3/2+1=2），获胜�
 随机超时：选举计时器是随机的，大大减少了多个节点同时发起选举导致选票分裂的概率。
 
 选举限制：Follower 只给“日志至少和自己一样新”的 Candidate 投票。这保证新 Leader 一定包含所有已提交的日志
+
+#### Leader主动转让
+etcd 等实现支持 MoveLeader：Leader 主动让某个 Follower 立刻发起选举。流程：
+旧 Leader 给目标 Follower 发 TimeoutNow 消息，让它立即超时发起选举（不等随机超时）；
+目标 Follower Term+1 拉票，拿到多数派当选；
+旧 Leader 收到新 Leader 的更高 Term 心跳，降级为 Follower，跟随新 Leader。
+
+这是唯一一种主动促成新Leader的机制
+
 ## 日志复制(日志落盘 + 网络复制)
+注意： 日志只记录写日志，也就是改变 状态机的操作
+
 客户端发起请求：客户端把写请求 {"op": "SET", "key": "x", "value": "1"} 发送给 Leader（Node2）。
 
 Leader 日志落盘（Commit）：
@@ -82,7 +93,9 @@ key：
 ## Raft应对故障
 #### Leader宕机
 心跳超时：Node1、Node2、Node4、Node5 在 150ms~300ms 内没收到 Node3 的心跳。
-发起选举：Node1（计时器先归零）变成 Candidate，任期 +1（变为 4），请求其他节点投票。
+发起选举：Node1（计时器先归零）变成 Candidate，任期 +1（变为 4），请求其他节点投票
+投票环节：比较候选人的Term是否比自己大，比较候选人的日志是否比自己新
+日志比较只看最后一条日志，先看term再看Index
 获得多数票：Node1 收到 Node2、Node4 的投票（共 3 票），成为新 Leader（任期 4）。
 继续服务：Node1 作为新 Leader 上台，新Leader先做日志对齐工作，Leader先用自己的日志去覆盖其他Node上面日志的分叉部分，保证所有活着的Node都与Leader同步
 
@@ -116,3 +129,17 @@ A 恰好崩溃/网络分区；
 新配置视角：{A, B, C, D, E}，Quorum = 3。C、D、E 可以组成多数派。
 在两个多数派中都会进行Leader选举，可能造成多Leader
 
+#### etcd/tikv中的改良做法
+新加入的节点如果是干净的，里面没有任何日志记录，就会造成一个问题：
+
+假设原来 3 节点集群（A=Leader, B, C），Quorum = 2。
+现在新加一个节点 D，D 是干净的、日志落后一大截。
+问题在于：D 一加入就是正式成员（voter），算进 Quorum 了。
+集群 4 节点，Quorum = 3。
+1. 此时如果 C 挂了，存活的是 A、B、D。
+A 提交新写入需要 3 个节点确认（A 自己 + B + D）。
+B 能马上确认，但 D 日志差一大截，要先追上才能确认。
+而 D 追上又需要 Leader 持续给它发日志
+在D完成日志收集之前都无法处理新读写请求的日志，这段时间内集群是不可用的
+2. 此时如果A(leader挂了)，存活的是B、C、D
+D仍然可以投票 ，选出leader之后继续同步日志，在日志收集完成之前无法处理新读写请求的日志，这段时间内集群是不可用的

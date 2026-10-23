@@ -24,6 +24,8 @@ mmap 触发的是缺页异常（Page Fault）机制——首次访问映射地�
 大文件随机访问、数据库的 Buffer Pool 实现
 加载动态库、可执行文件
 ## Direct IO
+#面试-存储内核-复习 解释 direct I/O 的语义，以及它和 page cache 的交互
+
 打开文件时带 O_DIRECT 标志，读写时数据不经过内核页缓存，直接在用户缓冲区和磁盘之间走 DMA
 彻底绕过 Page Cache，用户缓冲区直接和磁盘/网卡通过 DMA 通信
 核心思想：彻底绕过 Page Cache，用户缓冲区直接和磁盘/网卡通过 DMA 通信。
@@ -32,6 +34,7 @@ mmap 触发的是缺页异常（Page Fault）机制——首次访问映射地�
 磁盘 → [DMA] → 用户缓冲区（直接，不经过 Page Cache）
 ```
 
+- O_DIRECT 不等于同步落盘。它只保证数据不从 page cache 过，不保证 write 返回时数据已经在物理介质上。数据可能还在设备的 DMA buffer 或者控制器缓存里排队。要持久化保证，仍然得靠 fsync
 - 用户缓冲区必须内存对齐
 - 一个read/write对应一个IO请求，不做写合并
 - 应用程序需要自己管理缓存
@@ -39,6 +42,14 @@ mmap 触发的是缺页异常（Page Fault）机制——首次访问映射地�
 典型用途：
 数据库（MySQL InnoDB、Oracle 等）自己管理缓存，不想让 OS 再缓存一遍
 对缓存一致性要求高、或数据量巨大不适合走 page cache 的场景
+
+#### Direct IO 与 PageCache 之间的交互
+现在PageCache还在，内核必须处理有人走缓存、有人绕过缓存的冲突
+
+O_DIRECT 写之前，内核会先把目标范围内的脏页刷下去，写完之后让对应的 page cache 页失效。这样后续如果有人走普通 read，不会从缓存里读到旧数据、
+
+O_DIRECT 读之前，内核会先让目标范围在 page cache把脏页写回，保证读到的不是缓存里的陈旧副本。
+
 ## Zero-Copy
  一个设计目标/技术统称，不是某个具体 API。目标是让数据在传输过程中尽量少拷贝、少经过 CPU。
  最经典的场景：把文件发送到网络（比如 Web 服务器发静态文件）。
@@ -60,6 +71,9 @@ mmap 触发的是缺页异常（Page Fault）机制——首次访问映射地�
 | 数据可修改 | 是 | 是 | 否（内核空间流转） |
 | 适用文件大小 | 大文件更优 | 大文件更优 | 大文件更优 |
 | 典型应用 | 数据库、消息队列索引 | 数据库、分布式存储 | Nginx、Kafka 数据文件 |
+mmap解决的是访问方式的问题，Direct IO解决的是缓存策略的问题
 
+mmap：数据需要被反复访问、且能接受内核 page cache 的调度策略
+但 mmap 有个坑：page cache 会留驻。你映射一个比物理内存还大的 checkpoint，加载过程中 page cache 被填满，可能把其他进程甚至 vLLM 自己的 worker 挤到 swap 里。
 
-
+Direct IO： 一次性大块顺序读写，且你不想污染 page cache或者你能比内核更好地管理缓存和 I/O 调度的场景

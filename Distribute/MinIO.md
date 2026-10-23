@@ -6,13 +6,13 @@ MinIO 的本质，是一个用 Go 语言手搓的、极度压榨硬件 I/O 极�
 这种无状态、去中心化的设计，在 K8s 中简直是完美的 StatefulSet 调度对象。当你的千卡训练集群需要扩容存储时，你可以像拉起普通微服务一样，通过 MinIO Operator 瞬间拉起几十 TB 的存储池，而不用担心单点故障或元数据瓶颈。
 
 ## 数据面
-MiniIO默认跳过操作系统的PagaCache
+MinIO默认跳过操作系统的PagaCache
 因为ai训练中数据通常是顺序读写的。如果走 Page Cache，不仅会白白占用宝贵的内存，还会引发频繁的内存回收（Page Reclaim），导致 CPU 软中断飙升。
-MiniIO采用DMA将数据从网卡/磁盘搬运到用户态缓冲区，在送给应用
+MinIO采用DMA将数据从网卡/磁盘搬运到用户态缓冲区，在送给应用
 
 核心设计: 流式搬运
-MiniIO不会将整个文件读进内存，而是像流水线一样，来多少内容就处理多少
-MiniIO源码深度依赖Go的并发原语:`io.Pipe`,`sync.Pool`,`chan struct{}`
+MinIO不会将整个文件读进内存，而是像流水线一样，来多少内容就处理多少
+MinIO源码深度依赖Go的并发原语:`io.Pipe`,`sync.Pool`,`chan struct{}`
 #### `io.Pipe`: 解决处理多少数据就需要多少内存的问题
 `io.Pipe`是同步阻塞的，向`PipeWriter`写入数据的时候，写入操作会立刻阻塞，直到有另一个 Goroutine 从 `PipeReader `中读走这些数据。
 
@@ -53,7 +53,7 @@ Go 1.14+出现的异步信号抢占
 
 MinIO 的解法是：元数据内联（Inline Metadata）+ MessagePack 序列化。
 
-MiniIO没有独立的元数据数据库，上传对象中的纠删集的磁盘上面创建一个目录，里面的两个文件： 
+MinIO没有独立的元数据数据库，上传对象中的纠删集的磁盘上面创建一个目录，里面的两个文件： 
 part.N：实际的数据分片。
 xl.meta：该对象的完整元数据文件
 
