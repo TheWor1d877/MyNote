@@ -1,28 +1,3 @@
-# 项目考察 · P1 TrainCache（18）
-
-## 项目条目总表
-
-| 条目 | 形态 | 本节位置 | 一句话定位 |
-|---|---|---|---|
-| P1 TrainCache | 主项目 | A（1–58） | 训练全程数据流加速：启动预取、持续预取、阶段切换重预取 |
-| P2 KVRouter | 主项目 | B（1–45） | KV 感知推理网关：复现、测量、补冷启动缺口 |
-| S1 mini-Raft | 独立仓库，P1 附录 | C（1–7） | 论证题：P1 为什么用 etcd、不自研 Raft |
-| S3 eBPF | 独立仓库，P1 附录 | D（8–13） | 内核级观测：块 I/O、major fault、预读归因 |
-| S4 bitcask | 独立仓库，P1 附录 | E（14–21） | WAL、merge、WAL replay 恢复 |
-| M3 mini-CSI | 独立仓库，P1 附录 | F（22–25） | 1 周把 P1 从 hostPath 切到 CSI |
-| M1 hostPath 笔记 | 笔记，不开仓库 | G（26–27） | hostPath 放弃了哪几层隔离 |
-| M5 vLLM 精读笔记 | 笔记，P2 引用 | B6（45） | 引擎内核精读，S7 的设计依据 |
-| S2 io_uring | 并入 P1 | A6（51–52） | 小文件高 IOPS 实验臂 |
-| S5 RDMA | 并入 P1 `experimental/` | A6（53–55） | Soft-RoCE + ibverbs + C ABI |
-| S6 拓扑调度 | 并入 P1 `experimental/` | A6（56–58） | NFD/NRT 配置与链路，不写自研插件 |
-| S7 mini KV Manager | P2 附录 | B6（40–42） | 引擎内 KV block 管理 |
-| M4 token profiling | P2 附录 | B6（43–44） | token 级 eBPF uprobes |
-| M2 mini-CNI | 已删除 | — | 留档，不执行，不设题 |
-
-> 说明：本表"本节位置"列的字母小节与题号范围指向拆分后的 17/18/19/20 四个文件——A 见 `17-项目-P1-TrainCache.md`（1–58），B 见 `18-项目-P2-KVRouter.md`（1–45），C–G 见 `19-项目-小项目与附录.md`（1–27），H、I 见 `20-项目-开源与通用追问.md`（1–19）；四个文件内部题号均从 1 起。
-
----
-
 ## A. P1 TrainCache：训练全程数据流加速（1–58）
 
 ### A0 七问（1–7）
@@ -95,11 +70,13 @@
 
 ### A6 实验臂：S2 / S5 / S6（51–58）
 
+> 2026-11-02 口径：S2（51–52）不受影响。S5（53–55）不写代码、不跑传输臂，53 题那个 ⏳ 撤下——「P2P 块传输原型验了哪些功能」这一问不再存在，答法停在接口层与「性能不可采信」这条自设边界；S6（56–58）整项不执行，三题改成白板题，回答时逐条分清「读到」与「踩到」。
+
 51. 【S2】【上难度】O_DIRECT 的三重对齐（缓冲区地址、长度、偏移）为什么必须满足？overlayfs 上 O_DIRECT 报 EINVAL 的根因是什么？你最后落在什么文件系统上验证，用 `posix_memalign` 对齐到 4K 的哪一段代码？
 52. ★【S2】【天花板】4MiB 大块经 HTTP 抓取为什么是网络 bound，io_uring 省 syscall 对吞吐的预期是中性的？你的实验是否验证了这个阴性预期？小文件高 IOPS 臂的数字才是它的战场——两边都要报。v4 的持续预取让小文件请求更密集，你怎么设计“启动路径 vs 持续预取路径”的对照，证明收益到底来自 io_uring 还是来自请求分布变化？
-53. ★【S5】【证据题】⏳ Soft-RoCE 只能验证功能、性能不可信——为什么？CQ 事件通知在 Soft-RoCE 上经常丢事件、请求挂起超时，所以轮询是被迫选择；这个现象你用什么最小实验复现？P2P 块传输原型验了哪些功能？为什么任何 Soft-RoCE 性能数字都不能进报告？
-54. ★【S5】【取舍】为什么是“独立 C++ 传输组件 + 薄 C ABI”，而不是 cgo 把 libibverbs 直接链进 Go 热进程？三个原因：cgo 切换开销（goroutine→C 线程约 2–5μs）、CQ 轮询放 C 进程更干净、Go GC 可能移动内存让 `ibv_reg_mr` 失效。这三个原因分别怎么用最小实验证明，而不是背结论？
+53. ★【S5】【证据题】Soft-RoCE 只能验证功能、性能不可信——为什么？CQ 事件通知在 Soft-RoCE 上经常丢事件、请求挂起超时，所以轮询是被迫选择。传输臂 2026-11-02 起不写代码，这一题只答机制与接口层：rxe 里谁是那层「网卡」、`ibv_poll_cq` 与事件通知在软件栈上差别在哪一步、为什么任何 Soft-RoCE 性能数字都不能进报告。「原型验了哪些功能」这一问不再存在，被问到就答「没投那 4 周，验收口径是我自己写死的『功能可验证、性能不可采信』」。
+54. ★【S5】【取舍】为什么是“独立 C++ 传输组件 + 薄 C ABI”，而不是 cgo 把 libibverbs 直接链进 Go 热进程？三个原因：cgo 切换开销（goroutine→C 线程约 2–5μs）、CQ 轮询放 C 进程更干净、Go GC 可能移动内存让 `ibv_reg_mr` 失效。这三个原因分别怎么用最小实验证明，而不是背结论？（2026-11-02 起这一题只答「怎么设计才能证明」，不声称做过。）
 55. ★【S5】【天花板】RDMA Write 和 Send/Recv 在 P2P 拉取式场景怎么选？Write 是单边操作，B 预注册槽位、发布 rkey，A 直接写；Send/Recv 是双边，B 要提前 post receive buffer。`ibv_reg_mr` 为什么要锁页、为什么不能按需注册 4KB 小块？RoCE 的 PFC/ECN/MTU=4096 三前提怎么配合？4 周只做到“跑通”时，为什么降级成《为什么我没在主路径上 RDMA》而不是硬撑？
-56. ★【S6】【工程】白板讲全链路：device plugin TopologyInfo → kubelet Topology Manager → NFD topology-updater → NodeResourceTopology CRD → 调度插件 Filter/Score → bind。KubeSchedulerConfiguration v1 你踩过哪些坑（apiVersion、多 profile、schedulerName、pluginConfig 位置）？自定义 scheduler 的 RBAC 最少要哪些权限？
-57. ★【S6】【取舍】为什么砍掉阶段 B（自研最小插件）？P1 步骤 7 的插件比它完整在哪（数据亲和 + SchedulingGate + 门控 + 降级）？主动砍掉重复劳动，面试时怎么说才不像“没做完”？单 NUMA 游戏本上用 annotation/fake NRT 做实验为什么正当，怎么诚实标注“没验证真机绑核性能”？
-58. ★【S6】【对标】数据亲和 × 拓扑亲和的权重-决策曲线怎么画？`score = w·数据亲和 + (1−w)·拓扑亲和` 里两个分量各自怎么归一化到 [0,1]——不归一化 w 的语义怎么塌？多插件分数归一化为什么没有银弹？S6 的哪些资产直接搬进 P1，哪些只留在 `experimental/`？DRA 相对 device plugin 改变了什么，v1.35 GA、v1.36 接入 Workload/PodGroup 这两条事实你怎么讲？
+56. ★【S6】【工程】S6 整项 2026-11-02 起不执行，这题改成白板题：链路的每一跳谁执行、CRD 从哪来到哪去——device plugin TopologyInfo → kubelet Topology Manager → NFD topology-updater → NodeResourceTopology CRD → 调度插件 Filter/Score → bind。`KubeSchedulerConfiguration` v1 那几处易错（apiVersion、多 profile、schedulerName、pluginConfig 位置）只有读文档的份，被问到就说是读到、不是踩到。自定义 scheduler 的 RBAC 最少要哪些权限？
+57. ★【S6】【取舍】为什么砍掉阶段 B（自研最小插件，2026-10-15），又在 11 月 2 日把剩下的「配置与链路」那一档一起收掉？P1 步骤 7 的插件比它完整在哪（数据亲和 + SchedulingGate + 门控 + 降级）？主动砍掉重复劳动，面试时怎么说才不像“没做完”？单 NUMA 游戏本上用 annotation/fake NRT 做实验为什么只能算装置、不能算结论？
+58. ★【S6】【对标】数据亲和 × 拓扑亲和的权重-决策曲线该怎么设计——这条按设计讲，不跑：`score = w·数据亲和 + (1−w)·拓扑亲和` 里两个分量各自怎么归一化到 [0,1]，不归一化 w 的语义怎么塌？多插件分数归一化为什么没有银弹？S6 收掉之后留在 P1 里的资产只有步骤 7 的打分插件，`experimental/` 不再挂拓扑实验；DRA 相对 device plugin 改变了什么，v1.35 GA、v1.36 接入 Workload/PodGroup 这两条事实你怎么讲？
