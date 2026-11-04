@@ -1,7 +1,5 @@
 # 推理引擎与 vLLM（分级版）
 
-按重要性分三档：T1 必须能脱稿讲满 3–5 分钟；T2 能讲清 90 秒；T3 为扩展与速查。★ 仅表示原题库标记，已不完全等同 T1。新增题带【要点】，其中的项目版本、组件与指标名按 2026-10-31 核实，厂商性能数一律标为卖方口径；开口先报版本。2026-11-01 补的 32、33 两题核到源码行号与文件位置，行号以当日仓库版本为准。2026-11-02 补的 34、35 两题与 41 题的要点里，凡第三方来源给的版本号与支持状态一律标 UNVERIFIED，引用前重新核实；原 T3 的 34–44 顺延为 36–46，T1 与 T2 的编号未动，跨章引用不受影响。
-
 ## T1 · 必须脱口而出
 
 1. ★ 解释大模型推理的两个阶段：prefill 与 decode，它们的计算特征和瓶颈有何不同？
@@ -10,7 +8,7 @@
 4. ★ 什么是 continuous batching？它相比静态 batching 的优势是什么？
 5. ★ 什么是 PagedAttention？它如何借鉴虚拟内存思想管理 KV Cache？
 6. ★ 解释 KV Cache 的 block 管理与 paged 布局，block size 的选择如何影响显存碎片、显存带宽利用与吞吐？
-7. ★ 解释 Prefix Caching 的命中条件与 hash 机制（block hash 如何识别可复用前缀），LRU 淘汰如何与之协作？它在多轮对话和 RAG 场景中的价值是什么？
+7. ★ 解释 Prefix Caching 的命中条件与 hash 机制（block hash 如何识别可复用前缀），LRU 淘汰如何与之协作？它在多轮对话和 RAG 场景里省下什么？
 8. ★ 解释 KV Cache offload 到 CPU 内存或 NVMe 的取舍、换入换出机制与 vLLM swap 的触发条件，如何避免换入换出成为 PCIe 瓶颈？
 9. ★ KV 感知路由：推理网关为什么需要知道 KV Cache 的位置？缓存位置注册与租约机制应如何设计？
 10. ★ 解释推理网关的限流算法：令牌桶、漏桶、滑动窗口。
@@ -50,14 +48,14 @@
 32. 一个新请求进来，引擎怎么找到能复用的那段 KV？把切块、block hash 生成、最长公共前缀查找、后一块 hash 要不要依赖前一块四问一次答完，再说清 vLLM 的 hash 表与 SGLang 的 radix tree 在结构上差在哪。
    【要点】按 vLLM v0.32.0（2026-10-18）逐问：切块用 `--block-size`，默认 `DEFAULT_BLOCK_SIZE = 16`（`vllm/config/cache.py:72`），只缓存满块，末尾不满一块的 token 必须重算，所以查找时传的长度是 `num_tokens - 1`。hash 由 `hash_block_tokens(hash_function, parent_block_hash, curr_block_token_ids, extra_keys)` 算（`vllm/v1/core/kv_cache_utils.py:695`），真正喂进哈希函数的是 `(parent_block_hash, token 元组, extra_keys)` 三元组（同文件 724 行），链式依赖是明确设计：首块的 parent 取 `NONE_HASH`（`BlockHash(hash_fn(_NONE_HASH_SEED))`，172 行），密码学算法下种子固定为 `"vllm-none-hash"` 以便跨进程与跨节点复用，非密码学算法改用 `os.urandom` 随机种子。所以第五问的答案是要依赖，否则两棵不同前缀下的相同 token 块会撞同一个 key，命中就会把别人的 KV 接过来。`extra_keys` 装的是 LoRA（名字与路径）、多模态（identifier 与 offset）、`cache_salt`（只注入首块）、prompt_embeds（同文件 656 行附近），含义是 token 序列相同但 LoRA 或图不同就不算同一段前缀。算法选项 `prefix_caching_hash_algo` 有 `sha256`（默认）、`sha256_cbor`、`xxhash`、`xxhash_cbor`（`vllm/config/cache.py:143`），官方对非密码学算法的警告是可能泄露信息或行为未定义；v0.32.0 仓库里搜不到 `PrefixCollisionChecker`，这条按未落实处理。查找链是 Scheduler 到 `KVCacheManager.get_computed_blocks(request)`（`kv_cache_manager.py:264`），再到 `coordinator.find_longest_cache_hit(block_hashes, max_cache_hit_length)`（`kv_cache_coordinator.py:460/574`），最后到 `BlockPool.get_cached_block(hash, group_ids)`（`block_pool.py:198`），命中表是 `BlockPool.cached_block_hash_to_block`。返回值是 `(blocks, num_computed_tokens, shared_prefix_boundary)`，第二项直接赋给 `request.num_computed_tokens`，也就是这个请求跳过 prefill 的长度。混合架构下多 KV cache group 的取法是 `HybridKVCacheCoordinator` 源码注释写死的「A hit is the shortest across all groups」（同文件 70 行），取所有组的最小命中。淘汰侧 `FreeKVCacheBlockQueue` 是双向链表（`kv_cache_utils.py:246`），分配时 pop 队头即最旧，命中过的块由 `BlockPool.touch()` 增 `ref_cnt` 并从 free 链摘出。
    SGLang v0.5.22（2026-10-19）的对照做法：key 就是 token 序列本身（`RadixKey`，字段 `token_ids`、`extra_key`、`cache_salt`、`is_bigram`、`limit`，`python/sglang/srt/mem_cache/radix_cache.py:59`），一个节点可以存多 token，段中拆分靠 `_split_node`；匹配入口 `match_prefix(params) -> MatchResult`（同文件 364 行），返回 `device_prefix_len`、`last_device_node`、`last_host_node`，后两个字段正好是分层缓存的落点。使用中靠 `TreeNode.lock_ref` 与 `inc_lock_ref`/`dec_lock_ref` 保护，淘汰只从 `evictable_leaves` 堆里取，被锁住的部分计入 `protected_size`。`--radix-eviction-policy` 支持 `lru|lfu|slru|priority|tlru`，默认 `lru`（T-LRU 引 arXiv:2510.15152）；前缀缓存默认开，`--disable-radix-cache` 默认 False。
-   结构差别的答题落点：hash 表把前缀编码成链式哈希，查询是逐块 O(块数) 的哈希查表，天然带 `cache_salt` 与多模态命名空间，代价是命中长度只能落在块边界；radix tree 把前缀存成树的边标签，最长前匹配是从根往下走，粒度可以到 token，节点上直接挂引用计数与所在层级，代价是并发下的树锁与节点分裂管理。vLLM 设计文档只自述「选了 hash-based 方案」，两个仓库都没有对二者的官方对比段落，所以这段差别是按源码结构读的，答题时按实现层面讲，别引成官方结论。出处：本章 7 题（命中条件与 LRU 的定义层）、本章 28 题（网关侧近似索引与 KV 事件订阅）、08 章 17 题（attention 层的 IO 账，说明省下的 prefill 值多少钱）。
+   结构差别的答题落点：hash 表把前缀编码成链式哈希，查询是逐块 O(块数) 的哈希查表，天然带 `cache_salt` 与多模态命名空间，代价是命中长度只能落在块边界；radix tree 把前缀存成树的边标签，最长前匹配是从根往下走，粒度可以到 token，节点上直接挂引用计数与所在层级，代价是并发下的树锁与节点分裂管理。vLLM 设计文档只自述「选了 hash-based 方案」，两个仓库都没有对二者的官方对比段落，所以这段差别是按源码结构读的，答题时按源码实现讲，别引成官方结论。出处：本章 7 题（命中条件与 LRU 的定义层）、本章 28 题（网关侧近似索引与 KV 事件订阅）、08 章 17 题（attention 层的 IO 账，说明省下的 prefill 值多少钱）。
 
 33. 一批商品数据的离线 embedding 推理，和在线对话服务，考核的东西差在哪？这个分叉会改哪几个开关？
    【要点】指标定义按 vLLM v0.32.0 官方 `docs/benchmarking/cli.md`：TTFT 是发出请求到收到第一个流式输出，ITL 是相邻流式输出之间的间隔，TPOT 是 `(端到端延迟 − TTFT) / (输出 token 数 − 1)`。在线 SLO 挂这三个加错误率。离线批任务里单请求延迟进不了目标函数，看的是整体吞吐、GPU 利用率、容错和整批完成时间；llm-d-batch-gateway v1.0.0（2026-10-18）README 的写法是给批任务按队列深度与利用率动态限流派发，减少对交互式负载的干扰，容错只写到「batch processor 崩溃后自动恢复」这一层。
    往下推的四件事（这部分是按机制推的，不是官方口径，讲的时候要说清）：
    1. batching 策略变了。continuous batching 的价值是把不同到达时刻的请求拼起来、不让短请求等长请求；离线提交时刻本来就集中、批次可控，静态大批次也能吃满，chunked prefill 那套抢跑权衡随之变弱。vLLM `docs/configuration/optimization.md` 的建议只覆盖生成式（V1 默认开 chunked prefill，追求吞吐时 `max_num_batched_tokens > 8192`，小值利于 ITL、大值利于 TTFT），面向 embedding 批量的官方建议没找到，标 UNVERIFIED。
-   2. 结构差异是硬证据。embedding 这类 pooling 模型 prefill 完就结束，没有逐 token decode。v0.32.0 的离线入口是 `vllm.LLM` 类（`generate`、`chat`、`classify`、`embed`、`score`、`encode`），模型侧用 `--convert embed` 与 `--pooler-config`，旧教程里常见的 `--task` 已经不在参数列表里。`vllm/config/vllm.py:1585-1596` 的原话是「当前异步调度的实现会拖累 pooling 模型的性能，所以默认关掉」，`runner_type == "pooling"` 时 `async_scheduling` 自动置 False。引擎在配置层面就把两类负载分开处理，这种默认值差异比概念对比更值得报。
-   3. 容错手段不同。在线不接受抢占与重算，判据在 03 章 39 题；离线可以整段重跑，于是闲时卡与 spot 给离线，配批次级重放与断点。公开资料里没有系统性论述，这条属推断。
+   2. 结构差异是硬证据。embedding 这类 pooling 模型 prefill 完就结束，没有逐 token decode。v0.32.0 的离线入口是 `vllm.LLM` 类（`generate`、`chat`、`classify`、`embed`、`score`、`encode`），模型侧用 `--convert embed` 与 `--pooler-config`，旧教程里常见的 `--task` 已经不在参数列表里。`vllm/config/vllm.py:1585-1596` 的原话是「当前异步调度的实现会拖累 pooling 模型的性能，所以默认关掉」，`runner_type == "pooling"` 时 `async_scheduling` 自动置 False。引擎在配置文件里就把两类负载分开处理，这种默认值差异比概念对比更值得报。
+   3. 容错手段不同。在线不接受抢占与重算，判据在 03 章 39 题；离线可以整段重跑，于是闲时卡与 spot 给离线，配批次级重放与断点。公开资料里没有这方面的论述，这条属推断。
    4. 成本口径换分母。离线算的是「整批完成时间 × 卡数」，等价于本章 27 题那个每百万 token 成本模型的批量版；13 章 14 题的推理闲时变现，就是给这类任务开的窗口。
    反问阶段直接用：对方给出业务口径之后，把「离线批次多大、用什么指标验收、重跑代价谁承担」问回去，这是 16 章第一节的用法。
 
@@ -66,17 +64,17 @@
    1. 同一 prompt 采多条。GRPO 按组采样，组大小记为 G，组内 G 条回答共享同一个 prompt 前缀，于是前缀命中是结构性的，不是流量凑出来的。本章 7 题与 32 题那套命中判据在这里直接生效：prefill 只做一次，其余 G−1 条走同一批 block，靠引用计数保住不被淘汰（`BlockPool.touch()` 增 `ref_cnt`，见 32 题要点）。网关侧的路由打分如果按「每条请求」算 token 数，会把这一段重复计 G 遍。
    2. 权重频繁同步。训练步产出的新参数要搬进引擎，卡就那么多，训练侧要显存、引擎侧也要显存。vLLM 的 `--enable-sleep-mode`（本章 44 题已列）正是这个场景的开关：level 1 保留权重、把 KV 换出，唤醒后重建 KV 池；权重更新一次，缓存全废，本章 20 题那套命中率统计在训练任务里要按步重置。
    3. 输出长度分布随训练进度漂。RL 里策略变好通常表现为回答变长，同一份 SLO 下并发容量跟着变小。15 章 8 题的 Little 定律估算里，那个「平均 200 token」是静态假设，这类负载要按训练阶段的长度曲线重算。
-   4. 批次到达时刻集中。一个 step 一次性灌进一批，到达不是泊松而是脉冲；本章 23 题的排队策略与本章 33 题的离线批任务各有一半性质——批任务的吞吐导向加上在线服务的步内同步等待。
-   开源框架名单：把训练与推理放在同一组卡上调度、由框架负责权重与显存交接的做法，公开可查的是 verl 与 OpenRLHF 这一族，它们的 rollout 走 vLLM 或 SGLang；具体的进程划分、通信方式与 sleep 时机没到源码逐行核实，答题时按机制推演并明说这一层。JD 标题写「推理\RL 方向」时（蔚来 2027 届那条），问的也是这四条负载特征，不是要你写过训练循环。
+   4. 批次到达时刻集中。一个 step 一次性灌进一批，到达呈脉冲分布；本章 23 题的排队策略与本章 33 题的离线批任务各有一半性质——批任务的吞吐导向加上在线服务的步内同步等待。
+   开源框架名单：把训练与推理放在同一组卡上调度、由框架负责权重与显存交接的做法，公开可查的是 verl 与 OpenRLHF 这一族，它们的 rollout 走 vLLM 或 SGLang；具体的进程划分、通信方式与 sleep 时机没到源码逐行核实，答题时按机制推演并明说这一层。JD 标题写「推理\RL 方向」时（蔚来 2027 届那条），问的也是这四条负载特征，不要求写过训练循环。
 
 35. vLLM、SGLang、TensorRT-LLM、LMDeploy 差在哪一层？什么条件下值得换引擎？
    【要点】四条路线优化的是不同的东西，别把它们摆成同一根轴上的四个分数。
    vLLM：调度优先的通用引擎，PagedAttention 加 V1 全异步调度（本章 38、44 题），模型覆盖与工具链最宽，默认起点。版本按本地核实过的 v0.32.0（2026-10-18）报。
-   SGLang：同一层的另一个前缀缓存结构（radix tree，本章 32 题），外加约束解码这一族能力；多轮对话、Agent 工具链、共享长前缀的 RAG 这类前缀重叠率高的负载，收益来自命中率而不是 kernel。版本按 v0.5.22（2026-10-19）报。
-   TensorRT-LLM：走编译路线，模型构建成图再跑，kernel 融合与 FP8 在 NVIDIA 卡上把上限抬起来；代价是只支持 NVIDIA、构建链复杂、模型或形状一变就要重新构建。值得换的条件是模型固定、流量长期稳定、编译与调优的人力摊得薄。融合的收益机制是减少访存往返，与 08 章 23 题同一条账。
-   LMDeploy：TurboMind 是自研 C++ 运行时，差异点在量化（AWQ、GPTQ、bitsandbytes 这类权重格式）与国产硬件适配；生态与英文文档比前三个窄。当前版本号两份公开来源给的日期与号段不一致，标 UNVERIFIED，答题只报机制层。
+   SGLang：同一层的另一个前缀缓存结构（radix tree，本章 32 题），外加约束解码这一族能力；多轮对话、Agent 工具链、共享长前缀的 RAG 这类前缀重叠率高的负载，收益来源是命中率，kernel 侧没有变化。版本按 v0.5.22（2026-10-19）报。
+   TensorRT-LLM：走编译路线，模型编译成图再跑，kernel 融合与 FP8 在 NVIDIA 卡上提高上限；代价是只支持 NVIDIA、构建链复杂、模型或形状一变就要重新构建。值得换的条件是模型固定、流量长期稳定、编译与调优的人力摊得薄。融合的收益机制是减少访存往返，与 08 章 23 题同一条账。
+   LMDeploy：TurboMind 是自研 C++ 运行时，差异点在量化（AWQ、GPTQ、bitsandbytes 这类权重格式）与国产硬件适配；社区与英文文档比前三个窄。当前版本号两份公开来源给的日期与号段不一致，标 UNVERIFIED，答题只报机制层。
    TGI 已进入维护模式这个说法只有单一博客来源，标 UNVERIFIED；引用前要自己去看仓库的 release 页。
-   判据两句：先量前缀重叠率和模型更新频率，再决定要不要离开 vLLM；跨引擎的性能差必须在自己的负载上 bench 过才写进结论，第三方天梯榜的 tok/s 是别人家的 batch size。网关侧的连带影响要主动补一句：换引擎等于换打分字段（本章 28 题的 approximate 与 precise、12 题的余量信号在不同引擎上口径不同），他的 P2 靠一层 adapter 把指标语义对齐，这句话是他这题区别于「背选型文章」的地方。
+   判据两句：先量前缀重叠率和模型更新频率，再决定要不要离开 vLLM；跨引擎的性能差必须在自己的负载上实测过才写进结论，第三方天梯榜的 tok/s 是别人家的 batch size。网关侧的连带影响要主动补一句：换引擎等于换打分字段（本章 28 题的 approximate 与 precise、12 题的余量信号在不同引擎上口径不同），他的 P2 靠一层 adapter 把指标语义对齐，这句话是他这题区别于「背选型文章」的地方。
 
 ## T3 · 扩展与速查
 
@@ -104,3 +102,5 @@
 
 46. 宽专家并行与 MoE 服务化给网关和缓存层加了什么新要求？
    【要点】llm-d 1.0 把 wide expert parallelism 列为支柱能力之一。系统的变化点：请求落到哪块卡取决于专家分布，一个 EP 组才是调度的最小单位；专家路由让激活分布随 prompt 内容变化，DP rank 之间会出现热点；KV 传输量随并行度与层数放大。网关侧的追问：打分要不要带 EP 组维度、prefill 的专家热点会不会把某个 rank 打爆、`kv-cache-utilization` 这类指标在 EP 组内还代不代表得了实例压力。他没跑过 MoE 服务，答法是按机制推演加一句「这条我停在读 release notes 与源码的层面，没实测」，别把厂商数当自己的结论。
+
+47. ★ 显存不足时，被 in-flight 请求引用、却排在空闲链队头的 block 怎么处理？全池 block 都被引用时，分配函数返回什么、调度器怎么反应？驱逐与抢占在这一点上是不是同一件事？V1 默认用重算代替换出，这次重算对 TTFT 与 KV 计量的影响落在哪一段？
