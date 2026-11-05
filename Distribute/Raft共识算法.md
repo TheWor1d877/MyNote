@@ -86,7 +86,9 @@ key：
 日志无限增长会吃满磁盘，重启时 replay 时间也扛不住。Snapshot 的思路是：把状态机当前状态拍成快照，然后丢掉快照点之前的日志
 
 压缩时间： 手动进行或者设置日志最大数量自动触发
-拍完日志后删除到哪里：默认删到 min(snapshotIndex, safeIndex)，其中 safeIndex 是所有成员中最小的 commitIndex。
+拍完日志后删除到哪里：默认删到 min(snapshotIndex, safeIndex)，其中 safeIndex 是所有成员中最小的 commitIndex,即是`min(matchIndex[peer])`
+
+`matchIndex[peer]`：leader 确认该 follower 已经复制成功的最高日志 index（即 follower 的 lastLogIndex 在 leader 视角下的下界）。
 
 或者保留最近的N条快照，让让小幅落后的 follower 还能走增量复制，而不是直接传快照，落后太多的 Follower就直接让Leader传入整个快照
 

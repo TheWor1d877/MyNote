@@ -64,4 +64,4 @@ applyIndex：状态机已经执行到哪个位置applyIndex <= commitIndex
 ReadIndex不走租期模式，而是：
 每一次读请求来的时候，先发送一次Leader确认，向多数派 确认自己是合法Leader，
 如果多数派里有更高 term 的节点，它会拒绝或 Leader 会看到更高 term
-确认成功之后，用当时的CommitIndx作为ReadIndex，等待本地状态机至少apply到这个位置之后才能返回
+确认成功之后，用当时的CommitIndex作为ReadIndex，等待本地状态机至少apply到这个位置之后才能返回
