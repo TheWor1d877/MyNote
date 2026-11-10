@@ -95,3 +95,74 @@
 
 33. 面试官问「你读过 Megatron 或 vLLM 的源码吗」，怎么答得可验证？
    【要点】2026 年的 JD 把框架源码阅读写成显性要求（懂车帝大模型 Infra 方向列 SGLang/vLLM/Megatron/DeepSpeed）。可验证的答法只有三段：入口在哪个文件、一条 step 依次经过哪几个函数、我在哪一行下过断言或改过行为。报仓库名和「看过」没有信息量。他没读过训练框架就明说读的是推理与数据侧，然后把本章前几题按机制答完整。声称读过又被追问细节，代价比承认没读过更大（16 章第四节的过程痕迹四层）。
+
+34. ★ 上机做 NCCL 通信优化，前五步依次是什么？为什么第一步不是调参？
+   【要点】第一步量露出来的通信时间，不是通信总时间。DDP 按 bucket（`bucket_cap_mb` 默认 25 MB）在反向里挂 hook，桶满即发 all-reduce，与剩余层的 backward 重叠；抓一步 torch profiler 导 chrome trace，看 nccl kernel 与计算 kernel 在时间轴上重叠多少，露出接近零则调 NCCL 无收益，瓶颈在数据加载或计算（27 题）。第二步分三种病因：小消息多、每次几 KB 是延迟主导，药是合并桶、梯度累积、换 Tree；大消息带宽跑不满是带宽主导，药是查拓扑与 channel 数；各 rank 到达 collective 的时刻差很大是慢节点，药不在 NCCL，去查数据加载与计算不均，这一条最常被误诊成网络故障（12 章 12 题）。分法是跑 `all_reduce_perf` 扫 message size 8 B 到 1 GB 看 busbw 曲线，小 size 段低属正常，大 size 段仍低于硬件上限才是通信有病；上限自己算，IB 200 Gb/s 即 25 GB/s 每网卡，ring 的 busbw = algbw × 2(N−1)/N。第三步读 `NCCL_DEBUG=INFO` 配 `NCCL_DEBUG_SUBSYS=INIT,GRAPH,ENV,TUNING`：INIT 段看卡间走 P2P/IPC 还是 SHM 还是 Socket，GRAPH 段看 ring 顺序与 channel 数，ENV 段看实际读到的变量。三个常见坑：容器没挂 `/dev/infiniband` 则静默退回 TCP、带宽掉一个数量级；多网卡没指定 `NCCL_IB_HCA` 则选错网卡；PCIe ACS 开着则 P2P 走不了退回 SHM。第四步调参一次只动一个、跑三遍取中位数：`NCCL_ALGO` 小消息 Tree、大消息 Ring、有 NVSwitch 用 NVLS；`NCCL_PROTO` 的 LL 带宽利用率约一半但延迟低、LL128 约 95%、Simple 跑满；`NCCL_MIN_NCHANNELS`/`MAX_NCHANNELS` 多了抢 SM、少了带宽不满；`NCCL_BUFFSIZE` 默认 4 MB。第五步是重叠层，不碰 NCCL 内部：`bucket_cap_mb` 两头取舍、`gradient_as_bucket_view=True` 省一次拷贝、FSDP 的 forward/backward prefetch 决定下一层参数何时提前 gather（27 题）。没有 IB 的机器上带宽数字不可采信，与 S2 的 Soft-RoCE 止损同一条判据；单卡双 rank 能练读输出与认路径，练不到集群性能。出处：NCCL 环境变量文档、nccl-tests、S2 与 N4 的止损条款。
+
+35. ★ 千卡训练挂了一次，恢复时间拆成哪四段？各段的杠杆是什么，哪一段在千卡规模下最大？
+   【要点】四段按时间顺序：检测（进程真死到系统判定死）、定位与隔离（找出坏节点踢出资源池）、重新集合（rendezvous 重建 process group）、加载 checkpoint 与预热（读回权重与优化器状态、重建 CUDA context、NCCL 重新建链、数据管道定位到上次 sample）。先量四段各占多少再决定优化哪段，打点位置是进程启动、rendezvous 完成、load 完成、第一个 step 完成，杀一个 rank 看日志时间差。检测段是第一大杠杆且最易被忽略：`init_process_group` 的 timeout 默认 30 分钟，改成 5 分钟并打开 `TORCH_NCCL_ASYNC_ERROR_HANDLING`（默认 3）让 watchdog 超时后主动结束进程，配 `--max-restarts`（默认 0，不开则自动重启不发生，30 题）；代价是慢节点可能被误杀，所以要配 per-rank 的每步计算时间与到达 collective 时刻分布比较。定位段靠心跳与 DCGM 的 XID 错号（63/64 是 ECC、79 是掉卡、74 是 NVLink）。加载段在千卡规模下最大，账要会算：70B 混合精度 Adam 每参数 16 字节，权重 2 + 梯度 2 + 一阶矩 4 + 二阶矩 4 + fp32 主权重 4，共 1.12 TB；分片到 1024 卡每卡读 1.1 GB，存储聚合带宽 100 GB/s 理论 11 秒，但一千客户端同读一份对象存储时元数据与连接数先撑不住，实际几分钟，所以 checkpoint 必须每 rank 写自己的分片（DCP 的做法）而不是 rank0 汇总写一份（31 题、15 章 2 题）。保存间隔按 √(2 × 保存成本 × 平均故障间隔) 定（Young/Daly），保存成本实测、故障间隔用集群历史（29 题的 Llama 3.1 每 3 小时一次可作参照）。再往上是热重启：checkpoint 在邻居节点主机内存冗余一份，故障时从邻居读，恢复从分钟级到秒级（Gemini, SOSP'23）；上机后先量「从存储读」与「从邻居内存读」的差，这个差决定要不要做冗余。慢节点比硬故障难治，硬故障有进程退出，慢节点只是慢、collective 等它、全集群一起慢（MegaScale, NSDI'24 的 per-rank 诊断与自动隔离）。最后是演练：定期杀 rank、断网、降频、写满盘，量四段时间验证告警与自动恢复真的会动。规模答法：笔记本用 gloo 四进程跑机制并量四段，标明口径；千卡用数字账外推，外推假设报出来，不声称做过千卡。出处：PyTorch DCP 与 elastic 文档、MegaScale、Gemini、N4。
+
+## 增补 · GPU 深度、PyTorch 资源视角、CUDA 到接口层（36–53，2026-11-09）
+
+> 三档优先级：GPU 深度按 T1 准备，是面试重点；PyTorch 只到训练与推理对资源的需求，不碰模型设计；CUDA 说到延迟降在哪段、动态 shape 为什么受限、vLLM 与 TensorRT 怎么绕，再深就不答。题号从 36 续，1–35 不动，「08 章 17 题」这类跨章引用仍然有效。硬件数字按当日手册核，报不准就说量级如此、会后核实。
+
+### GPU 深度（36–43）
+
+36. SM 靠什么隐藏访存延迟？occupancy 拉满和算力跑满之间差什么？
+   【要点】三段。第一段发射模型：一个 SM 有多个 warp scheduler，每周期各向一个调度分区发一条指令；warp 切换不动内存，寄存器和 PC 都在片上，所以切换本身没有成本（`__syncthreads()` 卡住的是 block 内全部 warp，跟切换成本无关）。第二段讲谁提供可发射的 warp：访存要等几百个周期，这段空档由其他就绪 warp 填；就绪 warp 有两个来源，驻留 warp 数（occupancy）和单个 warp 内互相不依赖的指令链（ILP）。第三段讲上限：驻留 warp 数由三样取最小，每 SM 的 warp 上限（A100/H100 每 SM 64 warp、2048 线程）、每线程寄存器数 × 线程数对 65536 的整除结果、shared memory 对每 SM 配额（10 题）。追问「occupancy 100% 吞吐为什么没涨」，四条依次答：warp 都阻塞在同一条依赖链上没有 ILP、已经撞带宽上限（37 题）、Tensor Core 没被用上（39 题）、grid 除不尽 SM 数在尾部空转（40 题）。答题边界：报 occupancy 的定义式和三个限制因子，「提高 occupancy 就一定变快」这句不说。
+
+37. 算术强度怎么算，roofline 拐点在哪，用它判断 prefill 与 decode 谁受限？
+   【要点】定义：算术强度 = FLOPs ÷ 从 HBM 读的字节数。拐点：AI\* = 峰值算力 ÷ 峰值带宽。代 A100 的 bf16 稠密峰值 312 TFLOPS、HBM2e 1.55 TB/s（与 10 题同一组数字），拐点约 200 FLOPs/byte，低于它这个 kernel 就是带宽受限。再代真实形状：decode 每步每层把权重读一遍、每参数算 2 FLOPs，每字节摊到约 2 FLOPs（batch=1 的 GEMV），跟拐点差两个数量级，瓶颈在带宽；prefill 是 b×s 很大的 GEMM，一份权重被复用几千次，AI 上千，撞算力上限。这三行是 06 章 1、2 题那句「prefill compute-bound、decode bandwidth-bound」的分母，也是 20 题三个式子的落地处。两条追问：batch 从 1 推到 64，decode 的瓶颈会不会挪——GEMV 变 GEMM，AI 随 batch 线性涨，会在某个 batch 跨过拐点，这个数自己按式子算；int8/int4 量化省的是字节，AI 随之上移，所以小 batch 上量化收益最大。答题边界：报 FLOPs 先说理论峰值还是实测吞吐，两个口径差出来的名字叫 MFU（29 题）。
+
+38. 从寄存器到主机内存五级存储，各自的带宽与延迟量级，哪一级归你控制？
+   【要点】按延迟从短到长排：寄存器（每线程私有，无访存周期）、shared memory 与 L1（同一块 SRAM，A100 每 SM 合池 192 KB、单 block 最多 164 KB，按手册核）、L2（全 GPU 共享，A100 40 MB、H100 50 MB，按手册核）、HBM（1.55 TB/s 量级、几百 ns）、主机内存（过 PCIe 4.0 x16 有效约 25 GB/s，15 章那张表）。要说的三点：shared 与 HBM 的带宽差一个数量级，这是 10 题往 shared 搬数据和 17 题不许把中间量落到 HBM 的全部理由；L2 由硬件管理，程序只能间接影响，CUDA 给的口子是把一段 buffer 标成 persisting 让它留在 L2（access policy window，名字按 CUDA 文档核，讲机制就够）；PCIe 与 NVLink 的量级差决定 15 题权重预取和 PD 分离搬运的账。追问「小 tensor 反复读为什么不放 shared」：shared 的生命周期跟 block 走，跨 kernel 的复用管不到。
+
+39. Tensor Core 什么时候走上它，走不上差多少？
+   【要点】条件四条：数据类型（fp16/bf16/tf32/FP8/INT8 有路，fp32 走不到）、维度对齐（mma 的 tile 对 m/n/k 有倍数要求，16 与 8 的具体倍数按代际不同）、形状要能整除到 warp 级（否则尾部浪费）、数据在 shared 里的布局满足矩阵片要求（10 题的 bank conflict 在这里同样管）。走不上就退回 CUDA core 做同样的乘加，差值按当日硬件核，报不准就说一个数量级。指令名按代际说：`mma.sync` 一路通用，Hopper 上是 wgmma、Blackwell 上是 tcgen05 这一类（两个名字按 PTX 文档核，别当定论）。系统侧的接口两条要主动给：模型的 hidden size 取 128 的倍数、attention 的 head_dim 取 64 或 128，除了数学原因还有这一层对齐（21、22 题）；FP8 的 scale 粒度是同一层的事（tensor-wise 还是 block-wise，DeepSeek-V3 用 block-scaled 与 UE8M0，32 题）。追问「fp32 的模型能不能靠 TC 提速」：tf32 是中间档，`torch.backends.cuda.matmul.allow_tf32` 决定矩阵乘走不走它，默认值随版本变过，开口先报你查的版本。
+
+40. grid 的 block 数除不尽 SM 数会亏多少？这个浪费叫什么，怎么修？
+   【要点】机制：block 按 wave 轮转发射，最后一波没排满，空转的那段叫 wave quantization 或者 tail effect。算例要会当场推：A100 108 个 SM，每 SM 驻留 1 个 block 的配置跑 1000 个 block，ceil(1000/108)=10 波，实际工作量只有 9.26 波，最后一波只占 28 个 SM，浪费约 7%；block 数越接近 SM 数的整数倍越省。追问「为什么大 GEMM 不觉得疼、decode 的小 kernel 疼」：每 block 工作量大时尾部摊薄，每 block 只有几十微秒时取整空转就是净损失——这正是 41 题那三个利用率口径打架的现场。修法按成本排三条：调 block 尺寸让 grid 对齐；persistent kernel，发 SM 数 × 每 SM 驻留数那么多个 block，block 内部循环取任务，省掉反复发射和尾部；多 stream 让不同 kernel 的尾部互补。`__launch_bounds__` 和 maxrregcount 靠压寄存器换驻留 block 数，也在改这道取整。
+
+41. `nvidia-smi` 的 GPU-Util 都 100% 了，吞吐为什么还能很差？
+   【要点】先给定义：这一列是采样周期内至少有一个 kernel 在跑的时间占比，它不分跑的是一个 warp 还是六十四个，不分用的是 CUDA core 还是 Tensor Core，不分在搬数据还是在算。于是三种情况都能 100% 而吞吐低：kernel 在跑但 occupancy 极低（36 题）、在跑但全是带宽搬运（37 题）、TC 完全没用上（39 题）。第二层报真正要看的三个口径：SM 侧吞吐占比、DRAM 带宽实测值对峰值、TC 利用率，Nsight Compute 的 section 里都有对应 metric，指标名不背，开口说明是从 ncu 读出来的。第三层报采集侧的坑：`nvidia-smi --query-gpu=utilization.gpu` 的采样窗口和查询周期错配会把短 kernel 的空档平均掉；MIG 切的是 SM 与显存分区，报数前要说清整卡还是切片；MPS 下多进程共享同一张卡，这一列变成共享域的总体值；DCGM 的 `DCGM_FI_DEV_GPU_UTIL` 是同一个口径导出给 Prometheus 的指标，35 题的 XID 也从 DCGM 读。追问「利用率均值正常但 P99 变差」：方差和分位比均值有用，跟 12 章 6 题、31 题同一套读法。
+
+42. 同一份配置两次跑出 20% 的差，先查什么？
+   【要点】先查时钟再查软件。第一步读 throttle 状态：NVML 的 `nvmlDeviceGetCurrentClocksThrottleReasons` 给出功耗封顶、硬件慢速、热慢速、同步加速这一类位（名字按 NVML 文档核），`nvidia-smi -q -d PERFORMANCE,POWER,CLOCK` 给当前时钟与上限。第二步知道笔记本为什么特殊：功耗预算与桌面卡不同档，充电与电池两种供电下同一份配置能差出你看到的这个数——S8 坑清单里这条是唯一有明确物理原因、能当场复现的。第三步锁频再测：`nvidia-smi -lgc` / `-lmc`（要 root，需要还原时清掉），报出你锁到的值；锁不住说明被功耗或温度压着，这个事实本身就是结论。第四步测量纪律：预热到时钟稳定才开始采样，每个采样点跑固定次数取中位数（16 题的重复口径），把 power、temperature、clock 三列与吞吐写进同一份 CSV，出结论前先看这三列有没有台阶。答题边界：写进简历前确认自己真的复现过，没有就按 16 章第四节说成读到的机制。
+
+43. 显存够不够看哪个数字？为什么只报一个口径会被追一句？
+   【要点】两个口径先分开：allocated 是 tensor 实际占的字节，reserved 是 PyTorch 的 caching allocator 从 CUDA 拿住不还的字节（`torch.cuda.memory_allocated()` / `memory_reserved()`，峰值另有 `max_memory_*`），8 题的实测口径就是这两个。差值来自 block 复用与碎片：tensor 大小不一、释放顺序和申请顺序不同，会出现总字节够但没有一段连续空间。两个数一起报、再解释差值，才算懂这一层。控制手段：`PYTORCH_CUDA_ALLOC_CONF` 的 `expandable_segments:True` 用可扩展段降碎片（变量名当前有效，行为按当日文档核）；`empty_cache()` 把 reserved 还给驱动，代价是下一次分配慢，适合做实验边界，不适合放服务路径。vLLM 走另一条：启动时按比例一次性圈走显存建 KV block pool，池内自己分页，绕开 PyTorch 分配器，这就是 51 题那句 OOM 落点。实测 block 数比按显存算的纸面值小，差额归给权重、激活、临时缓冲、CUDA context、碎片五块（51 题与 S8 的 51 题），这笔账要和 8 题对上。
+
+### PyTorch 资源视角（44–51）
+
+44. PyTorch 这个库管到哪一层，边界在哪？
+   【要点】五块按调用顺序：Python 前端（`torch.nn`、`torch.optim`、Tensor API）、ATen 算子库（每个算子一份 C++ 实现加多后端分派表）、autograd 引擎（45 题那条反向图）、`torch.distributed`（DDP、FSDP、DTensor、ProcessGroup 后端）、`torch.compile`（dynamo 抓图、inductor 出代码，23 题）。dispatcher 只讲到「同一个 `add` 按 dtype 与 device 查 kernel 表，决定走 CUDA 还是 CPU、走 ATen 默认实现还是自定义后端」，再往下的 autograd key、boxing 不碰。边界一句话讲完：PyTorch 排 kernel，不管请求。它不知道一批序列里哪个该先出、不管 KV block 的分页与驱逐、不做副本间路由，这三件事分别是 vLLM 的 scheduler、block manager 和 P2 网关（46、50 题、06 章）。追问「为什么推理服务不把 eager PyTorch 当运行时」：一次算子一回 Python 调用与分派的 CPU 开销、allocator 与反复变形状不友好（43 题）、形状变化让编译产物重建（53 题），三笔开销自己用 profiler 的 CPU 侧 aten:: 时间量，量不准就报口径。
+
+45. `loss.backward()` 一次调用依次发生什么？`no_grad`、`inference_mode`、`eval()` 各管哪一段？
+   【要点】路径：前向把 GradFn 节点串成图，`backward` 从 loss 起按拓扑序取就绪节点，每个节点由上游梯度算出对输入的梯度，累加进叶子 tensor 的 `.grad`，非叶子节点的中间梯度算完就释放。要第二阶梯度传 `create_graph=True`，`retain_graph=True` 只是别把图拆掉。累加语义解释两件事：`.grad` 要自己清零，以及 15 题 `no_sync()` 为什么只在最后一个 micro-step 同步。三个开关分开：`model.eval()` 只切 Dropout 与 BatchNorm 的行为，梯度照记；`torch.no_grad()` 关图构建，仍做版本检查；`torch.inference_mode()` 再多关掉版本计数，产出的 tensor 不能再喂进 autograd。验证循环包 `no_grad`，纯推理包 `inference_mode`。追问两条：第二次 backward 报错是因为图已释放、`.grad` 越攒越大是因为累加，同一条原因的两面。
+
+46. 训练一步的显存由哪几块组成？打印哪四个数？
+   【要点】五块清单：权重、梯度、优化器状态、激活、临时缓冲与保留差。静态按 6 题的 16 字节/参数（bf16 混合精度加 Adam：权重 2 + 梯度 2 + fp32 主权重 4 + 一阶矩 4 + 二阶矩 4），激活按 `b·s·h` 的线性项加 attention 的 `b·h·s²` 项，用 FA 就没有 materialize 的 s² 中间量（17 题）。四个打印点：`memory_allocated`、`memory_reserved`、`max_memory_allocated`、`max_memory_reserved`（43 题），再加一行 `sum(p.numel() for g in opt.param_groups for p in g)` 把参数量坐实，8 题的实测流程就是这两句。追问「batch 翻倍会不会 OOM」：先把激活那项翻倍算出新峰值，再对 reserved 报余量，报完再动手跑。这个顺序跟 14 章给验证定门禁是同一个纪律。
+
+47. batch size、序列长度、层数三根轴各把哪块资源顶起来？
+   【要点】一根轴一句话：层数顶权重与优化器状态，线性；层数也顶反向要保留的激活，线性；序列长度同时顶 attention 的二次项和 KV 的线性项；batch 只顶线性项。手算流程四步：静态（参数量 × 每参数字节，6 题）→ 激活（`L·b·s·h` × 每元素字节 × 系数，34 这个系数按 Megatron 的说法标 UNVERIFIED，自己按保留了几个中间量推）→ KV（推理才有，20 题的式子）→ 减 CUDA context 与碎片余量。同一套式子在训练里回答「能不能跑」，在推理里回答「能开多大并发」：每 token KV 字节 × 上下文长度 × 并发数 ÷ 池大小（06 章）。追问「显存不够，减 batch 还是减序列」：减 batch 省线性项、伤吞吐；减序列省二次项、伤任务本身；两项都动不了静态那三块，静态放不下要 TP 或 FSDP（11、12、16 题）。
+
+48. 混合精度一次 step 的完整链路，`GradScaler` 的四步各挡什么？
+   【要点】顺序：`scale` 把 loss 乘上系数放大梯度、避开 fp16 下溢；`backward` 走放大后的梯度；`unscale_(optimizer)` 把梯度除回来，这一步必须在 `step` 前，否则主权重更新被 scale 污染，梯度范数类操作也全错；`step` 内部先扫 inf/nan，发现就不更新权重；`update` 在跳过时把系数减半、连续若干步干净才乘回去。bf16 免掉整套的原因按 32 题那句：指数位 8 bit、动态范围与 fp32 同级，下溢不发生在梯度上。哪些算子留在 fp32 报类别（归约、softmax、loss 这类对精度敏感的），清单名按 `torch.autocast` 文档核，开口先报你查的版本。追问两条：`autocast` 不管权重的存储 dtype，只标计算 dtype，权重是 fp32 还是 bf16 由模型自己定；`GradScaler` 只对有可学习参数的分支有意义，冻结参数时 found_inf 检查照常跑、不更新。
+
+49. 拿到一个训练脚本，五分钟内怎么判断它用的是哪种并行？
+   【要点】四个读点依次：看 import 与包装，DDP 是 ` DistributedDataParallel(model)`，FSDP2 是 `fully_shard` 逐层调，老 FSDP1 是 `FullySharded` 包整模型（11 题）；看 `DeviceMesh` 的维度，一维是纯 FSDP，二维是 HSDP，再看 `init_process_group` 的 backend 是 nccl 还是 gloo，gloo 说明跑在 CPU 上，数字口径要跟着改（20 题）；看配置文件字段，Megatron 是 `--tensor-model-parallel-size`、`--pipeline-model-parallel-size`、`--context-parallel-size`、`--expert-model-parallel-size`，torchtitan 是并行配置块，DeepSpeed 是 `zero_optimization.stage` 加 offload 段（16 题）；跑一步 profiler 数集合通信 kernel，反向里出现 all-reduce 是 DDP，出现 all-gather 加 reduce-scatter 是 FSDP 或 ZeRO-3，MoE 层有 all-to-all，气泡看时间轴上 rank 之间的空档（15 题）。收尾一句判据：静态账按 6 题算，单卡放得下权重加优化器状态就用 DDP，放不下再谈通信量那 1.5 倍（11 题）。
+
+50. KV Cache 和 continuous batching 为什么影响显存？跟训练的显存账差在哪？
+   【要点】先把式子摆出来：每 token 每层 2 × `num_key_value_heads` × `head_dim` × dtype 字节（20 题），LLaMA-2-7B fp16 是 80 KB/token，GQA 省的就是头的这一项（5 题），MLA 换掉整个形状（22 题）。训练阶段没有 KV Cache：前向算出来的 K、V 留在激活里，反向要用就重算，序列长度由 batch 摊平；推理阶段每序列每步只新增一行查询，之前所有 token 的 K、V 必须留着，decode 的带宽账就是这么来的（37 题）。continuous batching 让不同请求在不同 token 位置进出，池的占用变成动态量：能塞多少并发由池大小除以每条序列的字节数决定，池被瓜分完就触发抢占与重计算（06 章 18 题）。三条追问各给一条：为什么 32k 上下文比 4k 贵得比线性多——KV 线性涨，attention 中间量和重算代价跟着序列长度平方走（21 题）；为什么显存还剩 20% 却报 no available blocks——池按 block 分页，碎片加预留加在途序列占位；为什么 `--gpu-memory-utilization` 调高会提高并发上限同时抬高抢占频率（S8 的取舍，43 题那两个口径是同一笔账的两端）。
+
+
+51. 那句 out of memory 落在哪一块？报错里的三个数分别读法是什么？
+   【要点】先看报错行的三个数：已经分配多少、试图再分配多少、设备总容量多少（PyTorch 的 CUDA OOM 文案带这三项）。判定流程：分配请求落在权重上还是 KV 池上还是激活上，训练侧权重与优化器状态是静态项（6 题），推理侧池子在启动时就按 `--gpu-memory-utilization` 圈定、运行期申请失败说明池子见底、报的是 no free blocks 这一类而不是 CUDA OOM（vLLM 的 scheduler 侧信号，06 章 18 题）。三种解法各对应一笔账：降并发或降上下文（改 KV 那项，20 题的式子）、降 batch 或开激活重计算（改激活那项，47 题）、上 TP 或 FSDP（改静态那项，11、12 题）。追问「为什么显存还剩 20% 就跑不动了」：那 20% 是 reserved 与 allocated 的差加碎片（43 题），池子按 block 分页、剩下的字节凑不出一个整块；这条和 43 题那句「实测 block 数比纸面值小」是同一笔账的两端。S8 的 51 题在 GPU 上测的就是这三块各占多少，那笔差额要和 8 题的静态账对上。
+
+### CUDA 到接口层（52–53）
+
+52. CUDA Graph 降的是哪一段延迟？为什么它对动态 shape 不友好？
+   【要点】省的两段：CPU 侧每次 kernel launch 的提交成本，GPU 前端对串行的发射调度。一次 decode step 发几十个 kernel，launch 成本与 kernel 本身执行时间同量级，所以时间轴上有空隙——profiler 里看 GPU 区间不是满的、利用率不满但没在等数据（41 题三种口径一起看），这个空隙才是 Graph 的目标。判据先算再动手：空隙占比乘 step 时间，跟预计收益比，低于几个百分点不折腾。为什么动态 shape 受限：捕获时把每个节点的 kernel 参数和显存地址写进 graph 里固化，输入地址或形状一变就要重新捕获，而重新捕获的成本高于省下的那点 launch——vLLM 的 decode 是动态 batch，这是它把捕获做成按 batch size 分桶的原因（46 题）。捕获的三条限制报得出：不能在图里做同步等待与主机回调，地址不能随便换（写进固定 buffer 或复用 memory pool），变长循环要拆成静态节点序列（26 题）。torch.compile 的 `mode="reduce-overhead"` 走的就是 Inductor 生成 Triton kernel 再用 CUDA Graph 打包提交（23 题），graph break 一处就退化成一段 eager，反复换形状会反复重建产物。
+
+53. 在 vLLM 与 TensorRT 里认出 CUDA 这一层，到哪一步就停？
+   【要点】三件事要认得出：profiler 与 nsys 的 kernel 名（`void flash::...` 这类 attention kernel、`cutlass::` 前缀的 GEMM、`ncclDevKernel_AllReduce_...`、TensorRT 自己插件的命名），launch 之间的空隙归 CPU 提交、归通信还是归依赖（41、52 题），H2D 与 D2H 的 memcpy 在流上有没有跟计算重叠（25 题）。两条路的分工一句分清：TensorRT 在构建期把整张静态图交给 kernel 选择与融合，动态 shape 靠 optimization profile 声明最小、最优、最大三档，profile 数量涨则 engine 体积与构建时间一起涨（字段名按 TRT 文档核）；vLLM 在运行期决定哪些请求进这一批、KV 分页怎么分配，kernel 是随包发布的实现加可选的 flash-attn、cutlass 后端（归属随版本变，标 UNVERIFIED，答「机制归哪层」比答「谁家有」稳）。停在接口层：说得出这一层省的是哪段开销、赔的是什么（46、52 题），说不出 mma 的 tile 形状与 PTX 细节就明说没写过 kernel（33 题），TC 那层的深度按 39 题。
