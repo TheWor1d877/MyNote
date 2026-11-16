@@ -1,0 +1,376 @@
+Using 1 devices for collective communication
+Memory allocated for 1 communicators and streams
+ASUS-HE:1893919:1893919 [0] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+ASUS-HE:1893919:1893919 [0] NCCL INFO cudaDriverVersion 13040
+ASUS-HE:1893919:1893919 [0] NCCL INFO NCCL version 2.32.6+cuda13.4
+ASUS-HE:1893919:1893919 [0] NCCL INFO NCCL git version master ad2d192c
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+ASUS-HE:1893919:1893919 [0] NCCL INFO Could not open libibverbs.so
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/IB : No device found.
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/IB : Using [RO]; OOB wlp4s0:10.148.118.181<0>
+
+[2026-11-14 22:51:50] ASUS-HE:1893919:1893919 [0] plugin/net.cc:229 (ncclNetPluginInit) NCCL ATTN Failed to initialize NET plugin IB
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/Socket : Using [0]wlp4s0:10.148.118.181<0> [1]br-03e13f380e02:172.19.0.1<0> [2]veth849d454:fe80::84be:21ff:fe84:b7c4%veth849d454<0> [3]veth625a30d:fe80::9470:f0ff:fe52:c4dc%veth625a30d<0> [4]vethf104bf2:fe80::b090:cbff:fe6f:311b%vethf104bf2<0> [5]veth048667f:fe80::f4dc:1dff:fe90:cad%veth048667f<0> [6]veth481a20a:fe80::7401:edff:fe68:6de8%veth481a20a<0>
+ASUS-HE:1893919:1893919 [0] NCCL INFO Initialized NET plugin Socket
+ASUS-HE:1893919:1893919 [0] NCCL INFO Could not get speed from /sys/class/net/wlp4s0/speed. Defaulting to 10 Gbps.
+ASUS-HE:1893919:1893919 [0] NCCL INFO Assigned NET plugin Socket to comm
+ASUS-HE:1893919:1893919 [0] NCCL INFO RMA/Plugin: Could not find: libnccl-rma.so
+ASUS-HE:1893919:1893919 [0] NCCL INFO RMA/Plugin: Failed to initialize plugin 
+
+[2026-11-14 22:51:50] ASUS-HE:1893919:1893919 [0] transport/rma_socket.cc:32 (ncclRmaSocketProxyInit) NCCL WARN RMA/Socket : rma_socket requires GDRCopy; and GDR Copy is not available
+ASUS-HE:1893919:1893919 [0] NCCL INFO RMA/Plugin: Failed to initialize plugin 
+ASUS-HE:1893919:1893919 [0] NCCL INFO RMA/Plugin: Failed to initialize any plugin
+ASUS-HE:1893919:1893919 [0] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+ASUS-HE:1893919:1893919 [0] NCCL INFO GIN/Plugin: Failed to initialize any GIN plugin
+ASUS-HE:1893919:1893919 [0] NCCL INFO Using network Socket
+ASUS-HE:1893919:1893919 [0] NCCL INFO Loaded NVML from libnvidia-ml.so.1
+ASUS-HE:1893919:1893919 [0] NCCL INFO [Rank 0] ncclCommInitAll comm 0x5f895139c8a0 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 1000 commId 0x31e3d41ac16a039c - Init START
+ASUS-HE:1893919:1893919 [0] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+ASUS-HE:1893919:1893919 [0] NCCL INFO CUDA did not report clique information for device 0 (cuDeviceGetCliqueCount returned 801)
+ASUS-HE:1893919:1893919 [0] NCCL INFO Topology detection: could not read /sys/devices/system/node/node4294967295/cpumap, using empty affinity
+ASUS-HE:1893919:1893919 [0] NCCL INFO TOPO/NET : Importing network plugins to topology
+ASUS-HE:1893919:1893919 [0] NCCL INFO Could not get speed from /sys/class/net/wlp4s0/speed. Defaulting to 10 Gbps.
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/Socket : GPU Direct RDMA Disabled for HCA 0 'wlp4s0'
+ASUS-HE:1893919:1893919 [0] NCCL INFO ncclTopoPopulateNics : Filled wlp4s0 in topo with pciPath=/sys/devices/pci0000:00/0000:00:01.7/0000:04:00.0 net=1 gin=(null) rma=(null) keep=1 coll=(null) rail=65536 (-1) plane=65536 (-1)
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/Socket : GPU Direct RDMA Disabled for HCA 1 'br-03e13f380e02'
+ASUS-HE:1893919:1893919 [0] NCCL INFO ncclTopoPopulateNics : Filled br-03e13f380e02 in topo with pciPath=(null) net=1 gin=(null) rma=(null) keep=1 coll=(null) rail=65537 (-1) plane=65536 (-1)
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/Socket : GPU Direct RDMA Disabled for HCA 2 'veth849d454'
+ASUS-HE:1893919:1893919 [0] NCCL INFO ncclTopoPopulateNics : Filled veth849d454 in topo with pciPath=(null) net=1 gin=(null) rma=(null) keep=1 coll=(null) rail=65538 (-1) plane=65537 (-1)
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/Socket : GPU Direct RDMA Disabled for HCA 3 'veth625a30d'
+ASUS-HE:1893919:1893919 [0] NCCL INFO ncclTopoPopulateNics : Filled veth625a30d in topo with pciPath=(null) net=1 gin=(null) rma=(null) keep=1 coll=(null) rail=65539 (-1) plane=65538 (-1)
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/Socket : GPU Direct RDMA Disabled for HCA 4 'vethf104bf2'
+ASUS-HE:1893919:1893919 [0] NCCL INFO ncclTopoPopulateNics : Filled vethf104bf2 in topo with pciPath=(null) net=1 gin=(null) rma=(null) keep=1 coll=(null) rail=65540 (-1) plane=65539 (-1)
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/Socket : GPU Direct RDMA Disabled for HCA 5 'veth048667f'
+ASUS-HE:1893919:1893919 [0] NCCL INFO ncclTopoPopulateNics : Filled veth048667f in topo with pciPath=(null) net=1 gin=(null) rma=(null) keep=1 coll=(null) rail=65541 (-1) plane=65540 (-1)
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/Socket : GPU Direct RDMA Disabled for HCA 6 'veth481a20a'
+ASUS-HE:1893919:1893919 [0] NCCL INFO ncclTopoPopulateNics : Filled veth481a20a in topo with pciPath=(null) net=1 gin=(null) rma=(null) keep=1 coll=(null) rail=65542 (-1) plane=65541 (-1)
+ASUS-HE:1893919:1893919 [0] NCCL INFO === System : maxBw 5000.0 totalBw 5000.0 ===
+ASUS-HE:1893919:1893919 [0] NCCL INFO CPU/0-ffffffffffffff (1/2/2)
+ASUS-HE:1893919:1893919 [0] NCCL INFO + PCI[5000.0] - NIC/0-ff000000000000
+ASUS-HE:1893919:1893919 [0] NCCL INFO                 + NET[1.2] - NET/0-1 (0/1/0/1.250000)
+ASUS-HE:1893919:1893919 [0] NCCL INFO                 + NET[1.2] - NET/0-2 (0/2/0/1.250000)
+ASUS-HE:1893919:1893919 [0] NCCL INFO                 + NET[1.2] - NET/0-3 (0/3/0/1.250000)
+ASUS-HE:1893919:1893919 [0] NCCL INFO                 + NET[1.2] - NET/0-4 (0/4/0/1.250000)
+ASUS-HE:1893919:1893919 [0] NCCL INFO                 + NET[1.2] - NET/0-5 (0/5/0/1.250000)
+ASUS-HE:1893919:1893919 [0] NCCL INFO                 + NET[1.2] - NET/0-6 (0/6/0/1.250000)
+ASUS-HE:1893919:1893919 [0] NCCL INFO + PCI[12.0] - DEV/0-1000 (10de28e010433638)
+ASUS-HE:1893919:1893919 [0] NCCL INFO               + LOC[5000.0] - GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO + PCI[0.4] - NIC/0-ff000000004000
+ASUS-HE:1893919:1893919 [0] NCCL INFO              + NET[1.2] - NET/0-0 (0/0/0/1.250000)
+ASUS-HE:1893919:1893919 [0] NCCL INFO ==========================================
+ASUS-HE:1893919:1893919 [0] NCCL INFO GPU/0-1000 :GPU/0-1000 (0/5000.0/LOC) CPU/0-ffffffffffffff (2/12.0/PHB) NET/0-0 (4/0.4/PHB) NET/0-1 (4/1.2/PHB) NET/0-2 (4/1.2/PHB) NET/0-3 (4/1.2/PHB) NET/0-4 (4/1.2/PHB) NET/0-5 (4/1.2/PHB) NET/0-6 (4/1.2/PHB) DEV/0-1000 (1/5000.0/LOC) 
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/0-0 :GPU/0-1000 (4/0.4/PHB) CPU/0-ffffffffffffff (2/0.4/PHB) NET/0-0 (0/5000.0/LOC) NET/0-1 (4/0.4/PHB) NET/0-2 (4/0.4/PHB) NET/0-3 (4/0.4/PHB) NET/0-4 (4/0.4/PHB) NET/0-5 (4/0.4/PHB) NET/0-6 (4/0.4/PHB) DEV/0-1000 (3/0.4/PHB) 
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/0-1 :GPU/0-1000 (4/1.2/PHB) CPU/0-ffffffffffffff (2/1.2/PHB) NET/0-0 (4/0.4/PHB) NET/0-1 (0/5000.0/LOC) NET/0-2 (2/1.2/LOC) NET/0-3 (2/1.2/LOC) NET/0-4 (2/1.2/LOC) NET/0-5 (2/1.2/LOC) NET/0-6 (2/1.2/LOC) DEV/0-1000 (3/1.2/PHB) 
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/0-2 :GPU/0-1000 (4/1.2/PHB) CPU/0-ffffffffffffff (2/1.2/PHB) NET/0-0 (4/0.4/PHB) NET/0-1 (2/1.2/LOC) NET/0-2 (0/5000.0/LOC) NET/0-3 (2/1.2/LOC) NET/0-4 (2/1.2/LOC) NET/0-5 (2/1.2/LOC) NET/0-6 (2/1.2/LOC) DEV/0-1000 (3/1.2/PHB) 
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/0-3 :GPU/0-1000 (4/1.2/PHB) CPU/0-ffffffffffffff (2/1.2/PHB) NET/0-0 (4/0.4/PHB) NET/0-1 (2/1.2/LOC) NET/0-2 (2/1.2/LOC) NET/0-3 (0/5000.0/LOC) NET/0-4 (2/1.2/LOC) NET/0-5 (2/1.2/LOC) NET/0-6 (2/1.2/LOC) DEV/0-1000 (3/1.2/PHB) 
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/0-4 :GPU/0-1000 (4/1.2/PHB) CPU/0-ffffffffffffff (2/1.2/PHB) NET/0-0 (4/0.4/PHB) NET/0-1 (2/1.2/LOC) NET/0-2 (2/1.2/LOC) NET/0-3 (2/1.2/LOC) NET/0-4 (0/5000.0/LOC) NET/0-5 (2/1.2/LOC) NET/0-6 (2/1.2/LOC) DEV/0-1000 (3/1.2/PHB) 
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/0-5 :GPU/0-1000 (4/1.2/PHB) CPU/0-ffffffffffffff (2/1.2/PHB) NET/0-0 (4/0.4/PHB) NET/0-1 (2/1.2/LOC) NET/0-2 (2/1.2/LOC) NET/0-3 (2/1.2/LOC) NET/0-4 (2/1.2/LOC) NET/0-5 (0/5000.0/LOC) NET/0-6 (2/1.2/LOC) DEV/0-1000 (3/1.2/PHB) 
+ASUS-HE:1893919:1893919 [0] NCCL INFO NET/0-6 :GPU/0-1000 (4/1.2/PHB) CPU/0-ffffffffffffff (2/1.2/PHB) NET/0-0 (4/0.4/PHB) NET/0-1 (2/1.2/LOC) NET/0-2 (2/1.2/LOC) NET/0-3 (2/1.2/LOC) NET/0-4 (2/1.2/LOC) NET/0-5 (2/1.2/LOC) NET/0-6 (0/5000.0/LOC) DEV/0-1000 (3/1.2/PHB) 
+ASUS-HE:1893919:1893919 [0] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 0 is empty, ignoring. (GPU affinity =  ; CPU affinity = 0-31).
+ASUS-HE:1893919:1893919 [0] NCCL INFO Pattern 4, crossNic 0, nChannels 32, bw 40.000000/40.000000, type LOC/PIX, sameChannels 1
+ASUS-HE:1893919:1893919 [0] NCCL INFO  0 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  1 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  2 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  3 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  4 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  5 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  6 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  7 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  8 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  9 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 10 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 11 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 12 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 13 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 14 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 15 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 16 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 17 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 18 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 19 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 20 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 21 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 22 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 23 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 24 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 25 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 26 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 27 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 28 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 29 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 30 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 31 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO Pattern 3, crossNic 0, nChannels 32, bw 40.000000/40.000000, type LOC/PIX, sameChannels 1
+ASUS-HE:1893919:1893919 [0] NCCL INFO  0 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  1 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  2 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  3 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  4 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  5 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  6 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  7 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  8 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO  9 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 10 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 11 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 12 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 13 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 14 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 15 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 16 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 17 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 18 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 19 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 20 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 21 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 22 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 23 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 24 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 25 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 26 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 27 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 28 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 29 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 30 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO 31 : GPU/0-1000
+ASUS-HE:1893919:1893919 [0] NCCL INFO Rank 0: 7 Net devices
+ASUS-HE:1893919:1893919 [0] NCCL INFO Rank 0: 0 CollNet devices
+ASUS-HE:1893919:1893919 [0] NCCL INFO Local Net device counts across ranks: min 7 max 7
+ASUS-HE:1893919:1893919 [0] NCCL INFO Local CollNet device counts across ranks: min 0 max 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO comm 0x5f895139c8a0 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 0 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 32 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 1 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 33 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 2 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 34 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 3 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 35 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 4 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 36 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 5 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 37 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 6 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 38 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 7 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 39 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 8 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 40 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 9 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 41 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 10 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 42 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 11 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 43 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 12 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 44 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 13 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 45 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 14 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 46 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 15 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 47 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 16 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 48 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 17 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 49 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 18 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 50 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 19 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 51 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 20 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 52 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 21 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 53 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 22 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 54 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 23 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 55 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 24 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 56 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 25 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 57 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 26 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 58 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 27 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 59 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 28 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 60 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 29 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 61 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 30 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 62 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 31 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Tree 63 : -1 -> 0 -> -1/-1/-1
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 00/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 01/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 02/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 03/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 04/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 05/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 06/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 07/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 08/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 09/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 10/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 11/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 12/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 13/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 14/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 15/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 16/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 17/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 18/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 19/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 20/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 21/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 22/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 23/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 24/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 25/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 26/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 27/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 28/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 29/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 30/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 31/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 32/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 33/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 34/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 35/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 36/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 37/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 38/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 39/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 40/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 41/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 42/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 43/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 44/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 45/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 46/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 47/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 48/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 49/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 50/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 51/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 52/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 53/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 54/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 55/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 56/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 57/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 58/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 59/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 60/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 61/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 62/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Channel 63/64 : 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 00 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 01 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 02 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 03 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 04 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 05 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 06 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 07 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 08 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 09 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 10 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 11 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 12 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 13 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 14 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 15 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 16 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 17 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 18 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 19 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 20 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 21 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 22 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 23 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 24 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 25 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 26 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 27 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 28 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 29 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 30 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 31 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 32 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 33 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 34 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 35 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 36 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 37 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 38 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 39 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 40 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 41 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 42 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 43 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 44 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 45 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 46 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 47 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 48 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 49 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 50 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 51 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 52 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 53 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 54 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 55 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 56 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 57 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 58 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 59 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 60 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 61 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 62 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Ring 63 : 0 -> 0 -> 0
+ASUS-HE:1893919:1893919 [0] NCCL INFO Trees [0] -1/-1/-1->0->-1 [1] -1/-1/-1->0->-1 [2] -1/-1/-1->0->-1 [3] -1/-1/-1->0->-1 [4] -1/-1/-1->0->-1 [5] -1/-1/-1->0->-1 [6] -1/-1/-1->0->-1 [7] -1/-1/-1->0->-1 [8] -1/-1/-1->0->-1 [9] -1/-1/-1->0->-1 [10] -1/-1/-1->0->-1 [11] -1/-1/-1->0->-1 [12] -1/-1/-1->0->-1 [13] -1/-1/-1->0->-1 [14] -1/-1/-1->0->-1 [15] -1/-1/-1->0->-1 [16] -1/-1/-1->0->-1 [17] -1/-1/-1->0->-1 [18] -1/-1/-1->0->-1 [19] -1/-1/-1->0->-1 [20] -1/-1/-1->0->-1 [21] -1/-1/-1->0->-1 [22] -1/-1/-1->0->-1 [23] -1/-1/-1->0->-1 [24] -1/-1/-1->0->-1 [25] -1/-1/-1->0->-1 [26] -1/-1/-1->0->-1 [27] -1/-1/-1->0->-1 [28] -1/-1/-1->0->-1 [29] -1/-1/-1->0->-1 [30] -1/-1/-1->0->-1 [31] -1/-1/-1->0->-1 [32] -1/-1/-1->0->-1 [33] -1/-1/-1->0->-1 [34] -1/-1/-1->0->-1 [35] -1/-1/-1->0->-1 [36] -1/-1/-1->0->-1 [37] -1/-1/-1->0->-1 [38] -1/-1/-1->0->-1 [39] -1/-1/-1->0->-1 [40] -1/-1/-1->0->-1 [41] -1/-1/-1->0->-1 [42] -1/-1/-1->0->-1 [43] -1/-1/-1->0->-1 [44] -1/-1/-1->0->-1 [45] -1/-1/-1->0->-1 [46] -1/-1/-1->0->-1 [47] -1/-1/-1->0->-1 [48] -1/-1/-1->0->-1 [4
+ASUS-HE:1893919:1893919 [0] NCCL INFO P2P Chunksize set to 524288
+ASUS-HE:1893919:1893919 [0] NCCL INFO Simple Buffer Size set to 4194304
+ASUS-HE:1893919:1893919 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+ASUS-HE:1893919:1893919 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+ASUS-HE:1893919:1893962 [0] NCCL INFO [Proxy Service] Device 0 CPU core 14
+ASUS-HE:1893919:1893963 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 7
+ASUS-HE:1893919:1893962 [0] NCCL INFO proxy listening socket at 10.148.118.181<42359>
+ASUS-HE:1893919:1893919 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+ASUS-HE:1893919:1893919 [0] NCCL INFO threadThresholds 8/8/64 | 8/8/64 | 512 | 512
+ASUS-HE:1893919:1893919 [0] NCCL INFO   Algorithm   |                            Tree                  |                            Ring                  |                   CollNetDirect                  |
+ASUS-HE:1893919:1893919 [0] NCCL INFO   Protocol    |             LL |          LL128 |         Simple |             LL |          LL128 |         Simple |             LL |          LL128 |         Simple |
+ASUS-HE:1893919:1893919 [0] NCCL INFO     Broadcast |    -1.0/  -1.0 |    -1.0/  -1.0 |    -1.0/  -1.0 |     7.6/  87.7 |    16.5/ 640.0 |    14.1/1280.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO        Reduce |    -1.0/  -1.0 |    -1.0/  -1.0 |    -1.0/  -1.0 |     7.6/  87.7 |    16.5/ 640.0 |    14.1/1280.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO     AllGather |    -1.0/  -1.0 |    -1.0/  -1.0 |    -1.0/  -1.0 |     6.6/   inf |    14.0/   inf |     8.4/   inf |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO ReduceScatter |    -1.0/  -1.0 |    -1.0/  -1.0 |    -1.0/  -1.0 |     6.6/   inf |    14.0/   inf |     8.4/   inf |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO     AllReduce |     6.8/  37.3 |    14.0/ 253.9 |     8.4/ 326.4 |     6.6/   inf |    14.0/   inf |     8.4/   inf |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO   Algorithm   |                    CollNetChain                  |                            NVLS                  |                        NVLSTree                  |
+ASUS-HE:1893919:1893919 [0] NCCL INFO   Protocol    |             LL |          LL128 |         Simple |             LL |          LL128 |         Simple |             LL |          LL128 |         Simple |
+ASUS-HE:1893919:1893919 [0] NCCL INFO     Broadcast |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO        Reduce |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO     AllGather |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO ReduceScatter |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO     AllReduce |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |     0.0/   0.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO   Algorithm   |                             PAT                  |
+ASUS-HE:1893919:1893919 [0] NCCL INFO   Protocol    |             LL |          LL128 |         Simple |             LL |          LL128 |         Simple |             LL |          LL128 |         Simple |
+ASUS-HE:1893919:1893919 [0] NCCL INFO     Broadcast |     0.0/   0.0 |     0.0/   0.0 |    -1.0/  -1.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO        Reduce |     0.0/   0.0 |     0.0/   0.0 |    -1.0/  -1.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO     AllGather |     0.0/   0.0 |     0.0/   0.0 |    10.8/ 960.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO ReduceScatter |     0.0/   0.0 |     0.0/   0.0 |    10.8/ 960.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO     AllReduce |     0.0/   0.0 |     0.0/   0.0 |    -1.0/  -1.0 |
+ASUS-HE:1893919:1893919 [0] NCCL INFO 64 coll channels, 64 collnet channels, 0 nvls channels, 64 p2p channels, 64 p2p channels per peer
+ASUS-HE:1893919:1893919 [0] NCCL INFO Rank 0 RMA strides: baseStride 0 userCtxStride 1 defaultUserStride 1 networkRmaSupport 0 (crossNic 1 contiguousRanksPerHost 1 numRmaCtx 1)
+ASUS-HE:1893919:1893919 [0] NCCL INFO symmetricSupport 1, cuMemEnable 1, globalGinSupport 0, cuMemGdrSupport 0, contiguousRanksPerHost 1, crossNicSupport 1
+ASUS-HE:1893919:1893919 [0] NCCL INFO CC Off, workFifoBytes 1048576
+ASUS-HE:1893919:1893919 [0] NCCL INFO ncclCommInitAll comm 0x5f895139c8a0 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 1000 commId 0x31e3d41ac16a039c - Init COMPLETE
+ASUS-HE:1893919:1893919 [0] NCCL INFO Init timings - ncclCommInitAll: rank 0 nranks 1 total 0.19 (kernels 0.16, alloc 0.01, bootstrap 0.00, allgathers 0.00, topo 0.00, graphs 0.00, connections 0.01, rest 0.00)
+NCCL communicators initialized for all devices
+  Device 0 initialized with data value 0
+Starting collective sum operation across all devices
+Collective operation completed
+Verifying results (expected sum: 0)
+  Device 0 correctly received sum: 0
+Example completed successfully!
