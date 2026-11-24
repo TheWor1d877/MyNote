@@ -1,4 +1,3 @@
-#面试-Go语言-复习 7. 解释 Go netpoll 与 epoll 的关系，以及网络 I/O 就绪后如何唤醒 G。
 Go 的网络模型 = 用户态 goroutine + 内核 epoll
 GO使用少量线程就能高效处理成千上万的连接
 ## 传统IO模型的瓶颈

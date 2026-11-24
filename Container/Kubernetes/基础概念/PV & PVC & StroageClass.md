@@ -1,6 +1,6 @@
 ## Introduction
 PVC是用户的存储申请，需要什么样子的存储
-PV是集群级别的存储资源对象，描述存储的大小、访问模式、回收策略等
+PV是存储资源对象，描述存储的大小、访问模式、回收策略等
 StorageClass负责动态生成PV，StorageClass 描述"用哪个 provisioner、什么参数、什么回收策略去创建存储"，PVC 里指定 storageClassName，供给器就会按需动态创建 PV 再绑定。
 
 K8s 的绑定控制器负责把 PVC 匹配到一个满足条件的 PV 上，绑定是一对一的，绑完这块 PV 就被这个 PVC 独占。

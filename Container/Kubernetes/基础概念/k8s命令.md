@@ -184,7 +184,7 @@ kubectl describe pods
 ```bash
 kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=docker.io/jocatalin/kubernetes-bootcamp:v2
 ```
-##### rollout
+###### rollout
 - 查看更新状态
 ```bash
 kubectl rollout status deployment hello-node
@@ -197,7 +197,7 @@ kubectl rollout history deployment hello-node --revision=2
 - 回滚版本
 kubectl rollout undo deployment hello-node
 
-##### kubectl set image 工作流程
+###### kubectl set image 工作流程
 - 修改deployment的pod模板，更改image字段
 - 创建新的ReplicaSet（副本集），他的pod模板指向新版本镜像
 - 逐步替换pod

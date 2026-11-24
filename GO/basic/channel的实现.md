@@ -1,5 +1,3 @@
-#面试-Go语言-复习 解释 Go 的 channel 底层结构，发送、接收、关闭分别做了什么。
-
 Go的channel本质就是一个带锁的环形缓冲区，加上两个等待队列(sendq,recvq)与一把mutex
 两个等待队列一个存发数据的goroutine一个存接受数据的goroutine
 发送接收关闭都是在操作这三个东西

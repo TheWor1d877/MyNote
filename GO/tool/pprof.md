@@ -1,5 +1,3 @@
-#面试-Go语言-复习 解释 Go 的 pprof：CPU、heap、block、mutex、goroutine profile 分别怎么看
-
 pprof观察Go的runtime程序内部的执行情况的，分为两大类： 采样型与快照型
 CPU、block、mutex、heap 是采样，goroutine 是快照。
 

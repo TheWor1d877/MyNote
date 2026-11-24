@@ -1,6 +1,3 @@
-#面试-Go语言-复习 解释 Go 的 GMP 调度模型，G、M、P 各自承担什么职责。
-#面试-Go语言-复习 解释 Go 调度器中的 work stealing 机制，以及它如何提升多核利用率。
-
 Go 语言中的 GMP 模型 是 Go 运行时（runtime）用来实现 高并发、高效调度协程（goroutine） 的核心机制。
 
 ## 角色

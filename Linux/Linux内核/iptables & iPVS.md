@@ -1,5 +1,3 @@
-#面试-云原生-复习  解释 kube-proxy 的 iptables 模式与 IPVS 模式差异，以及高并发推理网关下如何选型
-
 当你在 Linux 上访问一个 IP（比如 10.96.0.1:80），数据包会经过内核的 Netfilter 框架。
 Netfilter 是 Linux 内核中处理网络包的钩子系统（hook system），它在关键路径上设置了检查点：
 iptables IPVS都是在这些hook点上面工作的工具

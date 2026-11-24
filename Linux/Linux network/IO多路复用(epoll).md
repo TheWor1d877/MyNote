@@ -31,10 +31,12 @@ poll的底层是pollfd链表，最大连接数理论上无上限，工作效率�
 
 ## epoll
 #面试-计算机基础-复习  什么是 epoll？水平触发与边缘触发的区别是什么？在 Go netpoll 中如何体现？
+
 epoll是Linux上面做IO多路服用的内核机制，核心是将我注册的fd，与就绪的fd分开管理
 内核用红黑树维护我注册的fd，使用就绪链表维护已经就绪的事件
-当调用`epoll_wait`的时候只将就绪的fd拿出来
-不像select，poll需要全量拷贝内容
+当调用`epoll_wait`的时候只将就绪的fd拿出来，不像select，poll需要全量拷贝内容
+
+select 的开销跟"总连接数"成正比，epoll 的开销跟"活跃连接数"成正比
 
 #### 水平触发与边缘触发
 LT :  fd就绪的时候只要这个fd没有处理完成，那么epoll_wait就返回

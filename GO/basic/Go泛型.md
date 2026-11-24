@@ -1,5 +1,3 @@
-#面试-Go语言-复习  解释 Go 泛型的实现方式（GC shape stenciling）：为什么泛型没有对所有类型做完全的单态化？接口装箱又会对热路径性能造成哪些影响？
-
 C++ 模板的做法是完全单态化——`vector<int>`和 `vector<float>` 编译出两份完全独立的机器码，运行最快，但代码膨胀严重
 
 Go的选择是： GC Shape Stenciling

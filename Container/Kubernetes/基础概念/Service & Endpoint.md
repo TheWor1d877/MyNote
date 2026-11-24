@@ -1,5 +1,3 @@
-#面试-云原生-复习 解释 Service、Endpoints、EndpointSlice 的关系，以及大规模推理服务下 EndpointSlice 为什么重要
-
 ## Service
 默认情况下，Pod 只能通过 Kubernetes 集群中的内部 IP 地址访问。 要使得容器可以从 Kubernetes 虚拟网络的外部访问，你必须将 Pod 通过Service 公开出来。
 
@@ -91,7 +89,6 @@ targetRef:
 3. 更新是原子的，Endpoint是整体替换，但是往往需要修改的内容很少，只需修改一片即可
 4. 推理场景下副本多，负载波动经常，扩缩容频繁，滚动更新也是很频繁的
    这些操作都会大致后端Pod地址发生变化，所以对Endpoint的管理更加重要了
-
 
 解决方案： 分片处理
 ```yaml

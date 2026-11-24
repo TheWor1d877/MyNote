@@ -1,26 +1,38 @@
-#面试-云原生-复习  什么是 CRD？它和自定义控制器如何共同实现声明式 API？
 ## Controller
-#面试-云原生-复习 解释 Informer、InformerFactory、Lister、WorkQueue 在 controller 中的协作机制
-
 k8s中的自动化，本质上就是反复做三件事：观察实际状态 -> 对比期望状态 -> 不一致就手动对齐
 这个对比，动手的过程就叫作：reconclie（调谐）
 它只关心此刻期望和实际的差距，不关心中间发生了什么，这个特性叫作“水平触发”，相对的是边缘触发：只看变化事件
 
 Controller就是做调谐的控制器组件，它只维护状态，并且每一次调谐都是幂等的，因为controller可能因为各种原因处理同一个对象
 #### Controller的组件
-Informer： 跟API Server建立Watch连接，第一次先拿全量快照，然后Watch持续接收变更事件，将收到的对象存进本地缓存，并且维护缓存与API Server之间的同步关系
+![[Attachments/mermaid-diagram.png]]
+###### Informer
+跟API Server建立Watch连接，第一次先拿全量快照，然后Watch持续接收变更事件，将收到的对象存进本地缓存，并且维护缓存与API Server之间的同步关系
 
-InformerFactory： 负责Infromer的复用逻辑，同一个Factory下，监听所有Pod的同进程Controller复用一个Infromer
+k8s不保证Informer与etcd中数据的强一致性，Informer的职责是让Controller高效的获得k8s的集群资源状态、
+Controller 并不是要求每一刻都知道集群的绝对最新状态，是调谐架构，所以Infromer不需要做成强一致的
+
+###### InformerFactory
+负责Infromer的复用逻辑，同一个Factory下，监听所有Pod的同进程Controller复用一个Infromer
 ```text
 Controller A ─┐
 Controller B ─┼──► [Factory → Informer] ──► API Server ◄──► pod
 Controller C ─┘
 ```
 
-Lister： 是本地缓存读对象的调用接口，提供相关方法，直接从内存返回对象，零网络调用，零API Server压力
+###### Lister
+用于读取 Informer 本地缓存的接口，直接从内存返回对象，零网络调用，零API Server压力
+从 Lister 获取的对象通常是共享缓存对象，不应该直接修改它。
 
-WorkQueue： 解耦Infromer事件速率与Controller处理速率
-Informer 收到事件后，EventHandler 把对象的 key（namespace/name）扔进 WorkQueue，然后立刻返回。Controller 有独立的 worker goroutine 从队列里取 key，执行真正的 reconcile 逻辑。
+###### WorkQueue
+当资源发生 Add、Update、Delete 事件时，Informer 通过 EventHandler 将对应资源的 Key（例如 default/nginx）放入 WorkQueue，然后立刻返回。
+Controller 的 Worker 从 WorkQueue 中取出 Key，通过 Lister 查询本地缓存，获取资源当前状态，然后执行 Reconcile，将实际状态向期望状态收敛。
+WorkQueue 存储的是资源 Key，而不是完整资源对象
+
+这里采用了事件通知与状态读取分离的设计：
+Informer 负责感知变化和更新缓存。
+WorkQueue 负责任务调度、去重、重试和限速。
+Controller 负责业务调谐。
 
 ## CRD(Custom Resource Definition)
 在 Kubernetes 中，CRD 是一种扩展 API 的机制，允许你定义自己的资源类型，CRD描述一个自定义资源的相关字段，以及字段的类型CRD只做API拓展，但是不拓展行为，行为的拓展需要Controller实现
@@ -32,14 +44,12 @@ CRD 负责“能声明”，Controller 负责“让声明变成现实”。、
 插曲： CRD管 API 扩展，DRA管资源分配
 
 ## Operator
-#面试-云原生-复习  解释 Kubernetes Operator 模式，以及为什么分布式训练框架常用 Operator 管理。
-
 Operator = CRD + 自定义Controller
 用CRD定义一种新资源，用Controller监听这种资源，将他解析为具体的动作，在reconclie循环中翻译成对内置资源的操作
 
 自定义的Cntroller只管理CRD注册的新资源，不管别的内置资源
 
-## 分布式训练框架常用Operator
+#### 分布式训练框架常用Operator
 原生k8s的Job/Deployment表达不了寻不是训练的协同需求，只有Operator采耳脑功能将需求封装到控制循环中
 - 角色不对称： Pytorch有Master与Worker，普通Job来自同一个模板，无法表达这种差异
 - 容错语义： 普通Pod挂了，只要重启即可，Master挂了可能任务需要重来，Worker挂了看情况，支持弹性的框架可以缩容继续

@@ -19,7 +19,6 @@ val := atomic.LoadInt64(&x)
 普通读可能读到缓存里的旧值、可能被编译器优化掉；atomic 读带 acquire 语义，建立 happens-before,且禁止重排。
 
 ## 可见性
-#面试-Go语言-复习 解释 Go 的内存模型，happens-before 关系如何保证并发可见性。
 - CPU 有缓存，编译器会优化。
 - Goroutine A 修改了变量，Goroutine B 可能**永远看不到新值**（读的是寄存器或旧缓存）。
 
