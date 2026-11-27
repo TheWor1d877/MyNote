@@ -65,3 +65,7 @@ ReadIndex不走租期模式，而是：
 每一次读请求来的时候，先发送一次Leader确认，向多数派 确认自己是合法Leader，
 如果多数派里有更高 term 的节点，它会拒绝或 Leader 会看到更高 term
 确认成功之后，用当时的CommitIndex作为ReadIndex，等待本地状态机至少apply到这个位置之后才能返回
+
+#### 为什么 Lease Read 不能完全替代 ReadIndex？
+Lease Read 依赖时间和时钟假设
+Lease Read 需要严格的时钟约束和租约安全机制；ReadIndex 则通过多数派确认领导权，不依赖租约时间假设，适用性更广。
